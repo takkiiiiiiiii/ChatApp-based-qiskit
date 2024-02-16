@@ -6,19 +6,16 @@ from flask import session, request
 from flask_socketio import emit, join_room, leave_room, send, Namespace
 from .. import socketio
 # import threading
-from app.main.bb84 import qrng, compose_quantum_circuit, bob_measurement, check_bases, check_bits, compare_bases
+from app.main.bb84 import bb84
 import pickle
-from qiskit_ibm_runtime import QiskitRuntimeService
-from qiskit.providers.aer.noise import NoiseModel, kraus_error
-from qiskit import QuantumCircuit, Aer, execute, transpile
 
 # global_data_lock = threading.Lock()
 room_user_count = 0
 room_users = []
 client_rooms = {}
 
-key_length = 2048
-qubit = 29
+len_key = 2048
+num_qubits = 20
 
 class User:
     def __init__(self, username: str, sharekey, socket_classical, socket_quantum):
@@ -27,14 +24,6 @@ class User:
         self.socket_classical = socket_classical
         self.socket_quantum = socket_quantum
 
-    # def create_socket_for_quantum_channel(self):
-    #     import socket
-    #     SERVER_HOST_QUANTUM = '127.0.0.1'
-    #     SERVER_PORT_QUANTUM = 12000
-    #     client_socket_quantum = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    #     client_socket_quantum.connect((SERVER_HOST_QUANTUM, SERVER_PORT_QUANTUM))
-    #     self.socket_quantum = client_socket_quantum
-
     def create_socket_for_classical(self):
         import socket
         SERVER_HOST_CLASSICAL = '127.0.0.1'
@@ -42,36 +31,6 @@ class User:
         client_socket_classical = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket_classical.connect((SERVER_HOST_CLASSICAL, SERVER_PORT_CLASSICAL))
         self.socket_classical = client_socket_classical        
-
-def bb84(user0: User, user1: User):
-    sender_bits = qrng(qubit)
-    sender_bases = qrng(qubit)
-    receiver_bases = qrng(qubit)
-
-    bb84 = compose_quantum_circuit(qubit, sender_bits, sender_bases)
-
-    bb84, receiver_bits = bob_measurement(bb84,receiver_bases)
-
-    user0.create_socket_for_classical()
-    user1.create_socket_for_classical()
-    sender_classical_channel = user0.socket_classical
-    receiver_classical_channel = user1.socket_classical
-
-    # announce bob's bases
-    receiver_classical_channel.send(receiver_bases.encode('utf-8'))
-    receiver_bases = sender_classical_channel.recv(4096).decode('utf-8')
-
-    sender_classical_channel.close()
-    receiver_classical_channel.close()
-    
-    ab_bases, ab_matches = check_bases(sender_bases,receiver_bases)
-    ab_bits = check_bits(sender_bits, receiver_bits, ab_bases)
-
-    sender_key, receiver_key = compare_bases(qubit, ab_bases, ab_bits, sender_bits, receiver_bits)
-    
-    return sender_key, receiver_key
-
-
 
 
 users = []
@@ -97,32 +56,6 @@ def joined(message):
         users.append(u)
         room_users.append(username)
         room_user_count += 1
-        
-    # with global_data_lock:
-        # if room_user_count == 2:
-        #     user0 = users[0]
-        #     user1 = users[1]
-        
-        # user0.classical_socket = first_client_socket_quantum
-        # user1.classical_socket = second_client_socket_quantum
-        
-            # current_sender_key = ''
-            # current_receiver_key = ''
-
-            # sender_key_part, receiver_key_part = bb84(user0, user1)
-            # bb84_thread = threading.Thread(target=bb84, args=(user0, user1))
-
-            # bb84_thread.start()
-        
-
-            # while len(current_sender_key) <= key_length:
-            #     current_sender_key += sender_key_part
-            #     current_receiver_key += receiver_key_part
-
-            # bb84_thread.join()
-
-            # user0.sharekey = current_sender_key
-            # user1.sharekey = current_receiver_key
     
     if room_user_count == 2:
         user0 = users[0]
@@ -132,7 +65,7 @@ def joined(message):
 
         sender_key_part, receiver_key_part = bb84(user0, user1) # create a part of shareKey
 
-        while len(current_sender_key) <= key_length:
+        while len(current_sender_key) <= len_key:
             current_sender_key += sender_key_part
             current_receiver_key += receiver_key_part
 

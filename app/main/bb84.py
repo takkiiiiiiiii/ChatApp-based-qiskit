@@ -7,11 +7,38 @@ from qiskit import QuantumCircuit, Aer, execute
 from random import seed, sample
 from IPython.display import display
 
-# local simulation
-# backend = service.backend("simulator_mps")
+
 backend = Aer.get_backend('qasm_simulator')
-# simulator_mps
-# backend = service.backend("ibmq_qasm_simulator")
+
+
+def bb84(user0, user1, num_qubits, len_key):
+    sender_bits = qrng(num_qubits)
+    sender_bases = qrng(num_qubits)
+    receiver_bases = qrng(num_qubits)
+
+    bb84 = compose_quantum_circuit(num_qubits, sender_bits, sender_bases)
+
+    bb84, receiver_bits = bob_measurement(bb84,receiver_bases)
+
+    user0.create_socket_for_classical()
+    user1.create_socket_for_classical()
+    sender_classical_channel = user0.socket_classical
+    receiver_classical_channel = user1.socket_classical
+
+    # announce bob's bases
+    receiver_classical_channel.send(receiver_bases.encode('utf-8'))
+    receiver_bases = sender_classical_channel.recv(4096).decode('utf-8')
+
+    # Alice's Side
+    ab_bases, ab_matches = check_bases(sender_bases,receiver_bases)
+    ab_bits = check_bits(sender_bits, receiver_bits, ab_bases)
+
+    sender_classical_channel.close()
+    receiver_classical_channel.close()
+
+    sender_key, receiver_key = compare_bases(num_qubits, ab_bases, ab_bits, sender_bits, receiver_bits)
+    
+    return sharekey
 
 
 def qrng(n):
