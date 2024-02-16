@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="../static/style2.css">
+        <title>Chat App Base QKD</title>
+    </head>
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
+        <script type="text/javascript" src="//cdn.socket.io/4.4.1/socket.io.min.js"></script>
+        <script type="text/javascript" charset="utf-8">
+            var socket;
+            var user1, user2; 
+            var hashkey, truncatedKey;
+            $(document).ready(function(){
+                socket = io.connect('http://' + document.domain + ':' + location.port + '/chat');
+                socket.on('connect', function() {
+                    socket.emit('joined', {});
+                });
+                socket.on('status', function(data) {
+                    countUser = data.room_user_count;
+                    var messageClass = 'user-chat'
+                    if (countUser == 2) {
+                        hashkey = data.sharekey;
+                        truncatedKey = hashkey.substring(0, 3) + '***********************************************************************************************' + hashkey.slice(-4);
+                        $('#share-key').text(truncatedKey);
+                        var messageWithClass = '<span class="' + messageClass + '">' + data.msg + '</span><br>';
+                        $('#chat').append(messageWithClass);
+                        $('#chat').scrollTop($('#chat')[0].scrollHeight);
+                    } else {
+                        var messageWithClass = '<span class="' + messageClass + '">' + data.msg + '</span><br>';
+                        $('#chat').append(messageWithClass);
+                        $('#chat').scrollTop($('#chat')[0].scrollHeight);
+                    }
+                });
+                socket.on('message', function(data) {
+                    var usernames =  data.usernames
+                    console.log(usernames[0]);
+                    var messageClass = data.sender === usernames[0] ? 'user-chat1' : 'user-chat2';
+                    var messageWithClass = '<span class="' + messageClass + '">' + data.msg + '</span><br>';
+                    $('#chat').append(messageWithClass);
+                    $('#chat').scrollTop($('#chat')[0].scrollHeight);
+                    // update sharekey
+                    hashkey = data.updatekey;
+                    truncatedKey = hashkey.substring(0, 3) + '***********************************************************************************************' + hashkey.slice(-4);
+                    $('#share-key').text(truncatedKey);
+                    var messageWithClass = '<span class="' + messageClass + '">' + data.msg + '</span><br>';
+                    // $('#chat').append(messageWithClass);
+                    // $('#chat').scrollTop($('#chat')[0].scrollHeight);
+                });
+                $('#text').keypress(function(e) {
+                    var code = e.keyCode || e.which;
+                    if (code == 13) {
+                        text = $('#text').val();
+                        $('#text').val('');
+                        socket.emit('text', {msg: text});
+                    }
+                });
+            });
+            function leave_room() {
+                socket.emit('left', {}, function() {
+                    socket.disconnect();
+                    // go back to the login page
+                    window.location.href = "{{ url_for('main.index') }}";
+                });
+            }
+
+            function toggleKey() {
+                var keyElement = document.getElementById('share-key');
+
+                if (keyElement.innerHTML === truncatedKey) {
+                    keyElement.innerHTML = hashkey;
+                } else {
+                    keyElement.innerHTML = truncatedKey;
+                }
+            }
+        </script>
+    <!-- ヘッダー -->
+    <header>
+        <div class="header">
+            <div class="header-inner">
+                <h1 class="site-title">Chat App Base Quantum Key Distribution</h1>
+                <!-- <nav class="nav">
+                    <ul class="header-ul">
+                        <li class="header-li">
+                            <a class="header-link" href="#study">Study</a>
+                        </li>
+                    </ul>
+                </nav> -->
+            </div>
+        </div>
+    </header>
+
+    <section class="about" id="about">
+        <div class="wrapper">
+            <h2 class="section-title">Chat Room : {{ room }}</h2>
+            <div id="share-key" class="share-key"></div>
+            <div class="sharekey-button">
+                <button onclick="toggleKey()">View Key</button>
+            </div>
+            <!-- <span id="message" class="user-chat"></span> -->
+            <!-- <textarea id="chat"></textarea><br><br> -->
+            <div id="chat" contenteditable="false" class="chat-container"></div>
+            <input id="text" placeholder="Enter your message here"><br><br>
+            <a class="leave" href="#" onclick="leave_room();">Leave this room</a>
+        </div>
+    </section>
+
+    <!-- フッター -->
+    <div class="footer">
+        <div class="footer-logo">Chat App Base Quantum Key Distribution</div>
+        <div class="footer-list">
+          <ul>
+            <!-- <a class="footer-link" href="#about">
+                <li>
+                    <p class="footer-subtitle">About</p>
+                </li>
+            </a>
+            <a class="footer-link" href="#product">
+                <li>
+                    <p class="footer-subtitle">Product</p>
+                </li>
+            </a>
+            <a class="footer-link" href="#hobby">
+                <li>
+                    <p class="footer-subtitle">Hobby</p>
+                </li>
+            </a>
+            <a class="footer-link" href="#study">
+                <li>
+                    <p class="footer-subtitle">Study</p>
+                </li>
+            </a> -->
+          </ul>
+        </div>
+    </div>
+</html>

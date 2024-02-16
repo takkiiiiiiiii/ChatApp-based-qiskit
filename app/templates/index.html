@@ -1,0 +1,19 @@
+<html>
+    <head>
+        <title>Chat for Quantum Key Distribution</title>
+    </head>
+    <body>
+        <style>
+            h1, form input, form label {
+                font-size: 20px; /* この数値をお好みのフォントサイズに変更してください */
+            }
+        </style>
+        <h1>Chat for Quantum Key Distribution</h1>
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            {{ form.name.label }}: {{ form.name() }} {% for error in form.name.errors %}{{ error }}{% endfor %}<br>
+            {{ form.room.label }}: {{ form.room() }} {% for error in form.room.errors %}{{ error }}{% endfor %}<br>
+            {{ form.submit() }}
+        </form>
+    </body>
+</html>
