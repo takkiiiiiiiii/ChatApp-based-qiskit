@@ -6,6 +6,7 @@ from qiskit import *
 from qiskit import QuantumCircuit, Aer, execute
 from random import seed, sample
 from IPython.display import display
+import json
 
 
 backend = Aer.get_backend('qasm_simulator')
@@ -25,12 +26,44 @@ def bb84(user0, user1, num_qubits, len_key):
     sender_classical_channel = user0.socket_classical
     receiver_classical_channel = user1.socket_classical
 
+    # Alice sifted key
+    ka='' 
+    # Bob sifted key
+    kb=''
+    # 
+    err_num = 0
     # announce bob's bases
     receiver_classical_channel.send(receiver_bases.encode('utf-8'))
     receiver_bases = sender_classical_channel.recv(4096).decode('utf-8')
-
     # Alice's Side
     ab_bases, ab_matches = check_bases(sender_bases,receiver_bases)
+    for i in range(num_qubits):
+        if ab_bases[i] == 'Y':
+            ka += sender_bits[i]
+            kb += receiver_bits[i]
+
+    selection_size = int(ab_matches/3)
+    seed(64)
+    selection_sender = [list(pair) for pair in sample(list(enumerate(ka)), selection_size)]
+
+    # Alice sends the key information of random position
+    json_data = json.dumps(selection_sender)
+    byte_data = json_data.encode('utf-8')
+    sender_classical_channel.send(byte_data)
+
+    # Bob get the key information 
+    received_key_info = receiver_classical_channel.recv(4096)
+    received_string = received_key_info.decode('utf-8')
+    original_key_info = json.loads(received_string)
+
+    # Bob compare the positions of his own key with information based on indices
+    print(original_key_info)
+    for pair in original_key_info:
+        if kb[pair[0]] != pair[1]:
+            print("false")
+            print("abort the protocol")
+            receiver_classical_channel.send('False'.encode('utf-8'))
+
     ab_bits = check_bits(sender_bits, receiver_bits, ab_bases)
 
     sender_classical_channel.close()
@@ -38,7 +71,7 @@ def bb84(user0, user1, num_qubits, len_key):
 
     sender_key, receiver_key = compare_bases(num_qubits, ab_bases, ab_bits, sender_bits, receiver_bits)
     
-    return sharekey
+    return sender_key, receiver_key
 
 
 def qrng(n):

@@ -63,7 +63,7 @@ def joined(message):
         current_sender_key = ''
         current_receiver_key = ''
 
-        sender_key_part, receiver_key_part = bb84(user0, user1) # create a part of shareKey
+        sender_key_part, receiver_key_part = bb84(user0, user1, num_qubits, len_key) # create a part of shareKey
 
         while len(current_sender_key) <= len_key:
             current_sender_key += sender_key_part
@@ -115,10 +115,10 @@ def text(message):
         plaintext += chr(byte_value)
 
     # discard the sharekey and create new sharekey (onetimepad)
-    sender_key_part, receiver_key_part = bb84(user0, user1)
+    sender_key_part, receiver_key_part = bb84(user0, user1, num_qubits, len_key)
     current_sender_key = ''
     current_receiver_key = ''
-    while len(current_sender_key) <= key_length:
+    while len(current_sender_key) <= len_key:
             current_sender_key += sender_key_part
             current_receiver_key += receiver_key_part
 
