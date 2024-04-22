@@ -165,17 +165,17 @@ def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
             kb += bob_bits[i]
     return ka, kb
 
-def channel(qc: QuantumCircuit) -> QuantumCircuit:
-    # error rate
-    # error_kraus = kraus_error([[[1, 0], [0, (1 - error_prob)**0.5]],
-                        #   [[0, error_prob**0.5], [0, 0]]])
-    # クラウス演算子を使用してノイズモデルを構築
-    # 量子チャネルでのノイズによる量子情報の変化を再現
-    # Reproducing changes in quantum information due to noise in the quantum channel.
-    # noise_model = NoiseModel()
-    # noise_model.add_quantum_error(error_kraus, 'x', list(len(n)))
+# def channel(qc: QuantumCircuit) -> QuantumCircuit:
+#     # error rate
+#     error_kraus = kraus_error([[[1, 0], [0, (1 - error_prob)**0.5]],
+#                           [[0, error_prob**0.5], [0, 0]]])
+#     # クラウス演算子を使用してノイズモデルを構築
+#     # 量子チャネルでのノイズによる量子情報の変化を再現
+#     # Reproducing changes in quantum information due to noise in the quantum channel.
+#     noise_model = NoiseModel()
+#     noise_model.add_quantum_error(error_kraus, 'x', list(len(n)))
     
-    # transpiled_qc = transpile(qc, basis_gates=backend.configuration().basis_gates)
-    # backend.run(transpiled_qc)
+#     transpiled_qc = transpile(qc, basis_gates=backend.configuration().basis_gates)
+#     backend.run(transpiled_qc)
 
-    return qc
+#     return qc
