@@ -13,13 +13,28 @@ backend = Aer.get_backend('qasm_simulator')
 
 
 def bb84(user0, user1, num_qubits, len_key):
-    sender_bits = qrng(num_qubits)
-    sender_bases = qrng(num_qubits)
-    receiver_bases = qrng(num_qubits)
+    alice_bits = qrng(num_qubits)
+    alice_basis = qrng(num_qubits)
+    bob_basis = qrng(num_qubits)
 
-    bb84 = compose_quantum_circuit(num_qubits, sender_bits, sender_bases)
+    eve_bits = qrng(num_qubits)
 
-    bb84, receiver_bits = bob_measurement(bb84,receiver_bases)
+    # Alice generates qubits 
+    qc = compose_quantum_circuit(num_qubits, alice_bits, alice_basis)
+
+    # Eve eavesdrops Alice's qubits
+    qc, eve_bits = intercept_resend(qc, eve_bits)
+
+    # Comparison their basis between Alice and Eve
+    ae_basis, ae_match = check_bases(alice_basis, eve_bits)
+    # Comparison their bits between Alice and Eve
+    # ae_bits = check_bits(alice_bits,eve_bits,ae_basis)
+
+    # Bob measure Alice's qubit
+    qc, bob_bits = bob_measurement(qc,bob_basis)
+
+    
+
 
     user0.create_socket_for_classical()
     user1.create_socket_for_classical()
@@ -27,20 +42,23 @@ def bb84(user0, user1, num_qubits, len_key):
     receiver_classical_channel = user1.socket_classical
 
     # Alice sifted key
-    ka='' 
+    ka=''
     # Bob sifted key
     kb=''
-    # 
-    err_num = 0
+    # Eve sifted key
+    ke=''
+
+    # アリスとボブ間で基底は一致のはずだが、ビット値が異なる
+    err_num = 0 
     # announce bob's bases
-    receiver_classical_channel.send(receiver_bases.encode('utf-8'))
-    receiver_bases = sender_classical_channel.recv(4096).decode('utf-8')
-    # Alice's Side
-    ab_bases, ab_matches = check_bases(sender_bases,receiver_bases)
+    receiver_classical_channel.send(bob_basis.encode('utf-8'))
+    bob_basis = sender_classical_channel.recv(4096).decode('utf-8')
+    # Alice's side
+    ab_bases, ab_matches = check_bases(alice_basis,bob_basis)
     for i in range(num_qubits):
         if ab_bases[i] == 'Y':
-            ka += sender_bits[i]
-            kb += receiver_bits[i]
+            ka += alice_bits[i]
+            kb += bob_bits[i]
 
     selection_size = int(ab_matches/3)
     seed(64)
@@ -64,12 +82,12 @@ def bb84(user0, user1, num_qubits, len_key):
             print("abort the protocol")
             receiver_classical_channel.send('False'.encode('utf-8'))
 
-    ab_bits = check_bits(sender_bits, receiver_bits, ab_bases)
+    ab_bits = check_bits(alice_bits, bob_bits, ab_bases)
 
     sender_classical_channel.close()
     receiver_classical_channel.close()
 
-    sender_key, receiver_key = compare_bases(num_qubits, ab_bases, ab_bits, sender_bits, receiver_bits)
+    sender_key, receiver_key = compare_bases(num_qubits, ab_bases, ab_bits, alice_bits, bob_bits)
     
     return sender_key, receiver_key
 
@@ -150,10 +168,10 @@ def check_bits(b1,b2,bck):
 
 
 def compose_quantum_circuit(n, alice_bits, a) -> QuantumCircuit:
-    bb84 = QuantumCircuit(n,n)
-    bb84.measure_all()
-    bb84.compose(encode_qubits(n, alice_bits, a), inplace=True)
-    return bb84
+    qc = QuantumCircuit(n,n)
+    qc.measure_all()
+    qc.compose(encode_qubits(n, alice_bits, a), inplace=True)
+    return qc
 
 
 def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
@@ -164,6 +182,69 @@ def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
             ka += alice_bits[i]
             kb += bob_bits[i]
     return ka, kb
+
+# capture qubits, measure and send to Bob
+def intercept_resend(qc,e):
+    backend = Aer.get_backend('qasm_simulator') 
+    l = len(e)
+
+    for i in range(l):
+        if e[i] == '1':
+            qc.h(i)
+
+    display(qc.draw())
+    qc.measure(list(range(l)),list(range(l))) 
+    result = execute(qc,backend,shots=1).result() 
+    bits = list(result.get_counts().keys())[0] 
+    bits = ''.join(list(reversed(bits)))
+
+    qc.reset(list(range(l))) # Reset the quantum bit(s) to their default state すべての量子ビットの状態を|0>にする
+    
+
+    # イヴの情報を元に、アリスと同じエンコードをして、量子ビットの偏光状態を決める
+    for i in range(l):
+        if e[i] == '0':
+            if bits[i] == '1':
+                qc.x(i)
+        else:
+            if bits[i] == '0':
+                qc.h(i)
+            else:
+                qc.x(i)
+                qc.h(i)
+    # Qiskit回路における「バリア（barrier）」は、量子ビットの状態に影響を与えない特別な操作で、回路設計や最適化において視覚的・操作的な支援を提供　
+    qc.barrier()
+    display(qc.draw())
+    return [qc,bits]
+
+# check where bases matched
+def check_bases(b1,b2):
+    check = ''
+    matches = 0
+    for i in range(len(b1)):
+        if b1[i] == b2[i]: 
+            check += "Y" 
+            matches += 1
+        else:
+            check += "-"
+    return [check,matches]
+
+# check where measurement bits matched
+def check_bits(b1,b2,bck):
+    check = ''
+    for i in range(len(b1)):
+        if b1[i] == b2[i] and bck[i] == 'Y':
+            check += 'Y'
+        elif b1[i] == b2[i] and bck[i] != 'Y':
+            check += 'R'
+        elif b1[i] != b2[i] and bck[i] == 'Y':
+            check += '!'
+        elif b1[i] != b2[i] and bck[i] != 'Y':
+            check += '-'
+
+    return check
+
+
 
 # def channel(qc: QuantumCircuit) -> QuantumCircuit:
 #     # error rate
