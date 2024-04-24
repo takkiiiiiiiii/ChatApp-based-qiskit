@@ -16,25 +16,26 @@ def bb84(user0, user1, num_qubits, len_key):
     alice_bits = qrng(num_qubits)
     alice_basis = qrng(num_qubits)
     bob_basis = qrng(num_qubits)
-
-    eve_bits = qrng(num_qubits)
+    eve_basis = qrng(num_qubits)
 
     # Alice generates qubits 
     qc = compose_quantum_circuit(num_qubits, alice_bits, alice_basis)
 
     # Eve eavesdrops Alice's qubits
-    qc, eve_bits = intercept_resend(qc, eve_bits)
+    qc, eve_bits = intercept_resend(qc, eve_basis)
 
     # Comparison their basis between Alice and Eve
-    ae_basis, ae_match = check_bases(alice_basis, eve_bits)
+    ae_basis, ae_match = check_bases(alice_basis, eve_basis)
     # Comparison their bits between Alice and Eve
     # ae_bits = check_bits(alice_bits,eve_bits,ae_basis)
 
     # Bob measure Alice's qubit
     qc, bob_bits = bob_measurement(qc,bob_basis)
 
-    
+    # eb_basis, eb_matches = check_bases(eve_basis,bob_basis)
+    # eb_bits = check_bits(eve_bits,bob_bits,eb_basis)
 
+    altered_qubits = 0
 
     user0.create_socket_for_classical()
     user1.create_socket_for_classical()
@@ -48,17 +49,33 @@ def bb84(user0, user1, num_qubits, len_key):
     # Eve sifted key
     ke=''
 
-    # アリスとボブ間で基底は一致のはずだが、ビット値が異なる
-    err_num = 0 
-    # announce bob's bases
+    # アリスとボブ間で基底は一致のはずだが、ビット値が異なる(ノイズや盗聴者によるエラー)数
+    err_num = 0
+
+    # Announce bob's basis
     receiver_classical_channel.send(bob_basis.encode('utf-8'))
     bob_basis = sender_classical_channel.recv(4096).decode('utf-8')
     # Alice's side
-    ab_bases, ab_matches = check_bases(alice_basis,bob_basis)
+    ab_basis, ab_matches = check_bases(alice_basis,bob_basis)
+    ab_bits = check_bits(alice_bits, bob_bits, ab_basis)
+
     for i in range(num_qubits):
-        if ab_bases[i] == 'Y':
-            ka += alice_bits[i]
+        if ae_basis[i] != 'Y' and ab_basis[i] == 'Y': # アリスとイヴ間で基底は異なる(量子ビットの状態が変わる)、アリスとボブ間では一致
+            altered_qubits += 1
+        if ab_basis[i] == 'Y': # アリスとボブ間で基底が一致
+            ka += alice_bits[i] 
             kb += bob_bits[i]
+        if ae_basis[i] == 'Y': # アリスとイヴ間で基底が一致
+            ke += eve_bits[i]
+        if ab_bits[i] == '!': # アリスとボブ間で基底は一致のはずだが、ビット値が異なる (イヴによって、量子ビットの状態が変化)
+            err_num += 1
+    err_str = ''.join(['!' if ka[i] != kb[i] else ' ' for i in range(len(ka))])
+
+    print("Alice's remaining bits: " + ka)
+    print("Error positions:        " + err_str)
+    print("Bob's remaining bits:   " + kb)
+
+# Final key agreement process
 
     selection_size = int(ab_matches/3)
     seed(64)
@@ -74,22 +91,26 @@ def bb84(user0, user1, num_qubits, len_key):
     received_string = received_key_info.decode('utf-8')
     original_key_info = json.loads(received_string)
 
+
+    error_found = 0
     # Bob compare the positions of his own key with information based on indices
     print(original_key_info)
     for pair in original_key_info:
         if kb[pair[0]] != pair[1]:
-            print("false")
-            print("abort the protocol")
+            error_found += 1
+            print("Bob realize that Eve interfered and abort the protocol. Then Bob sends Alice that.")
             receiver_classical_channel.send('False'.encode('utf-8'))
-
-    ab_bits = check_bits(alice_bits, bob_bits, ab_bases)
 
     sender_classical_channel.close()
     receiver_classical_channel.close()
 
-    sender_key, receiver_key = compare_bases(num_qubits, ab_bases, ab_bits, alice_bits, bob_bits)
-    
-    return sender_key, receiver_key
+    if error_found > 0:
+        return -1, -1
+    else:      
+        # Compare each basis
+        sender_key, receiver_key = compare_bases(num_qubits, ab_basis, ab_bits, alice_bits, bob_bits)
+        
+        return sender_key, receiver_key
 
 
 def qrng(n):
@@ -105,6 +126,7 @@ def qrng(n):
     bits = list(result.get_counts().keys())[0] 
     bits = ''.join(list(reversed(bits)))
     return bits
+
 
 # qubit encodings in specified bases
 def encode_qubits(n,k,a):
@@ -125,10 +147,11 @@ def encode_qubits(n,k,a):
 
 
 # qubit measurements in specified bases
+# b = Bob's basis infomation
 def bob_measurement(qc,b):
     l = len(b)
     for i in range(l): 
-        if b[i] == '1': 
+        if b[i] == '1': # In case of Diagonal basis
             qc.h(i)
 
     qc.measure(list(range(l)),list(range(l))) 
@@ -138,6 +161,7 @@ def bob_measurement(qc,b):
 
     qc.barrier() 
     return [qc,bits]
+
 
 # check where bases matched
 def check_bases(b1,b2):
@@ -150,6 +174,7 @@ def check_bases(b1,b2):
         else:
             check += "-"
     return [check,matches]
+
 
 # check where measurement bits matched
 def check_bits(b1,b2,bck):
@@ -172,7 +197,6 @@ def compose_quantum_circuit(n, alice_bits, a) -> QuantumCircuit:
     qc.measure_all()
     qc.compose(encode_qubits(n, alice_bits, a), inplace=True)
     return qc
-
 
 def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
     ka = ''  # kaの初期化
@@ -218,31 +242,31 @@ def intercept_resend(qc,e):
     return [qc,bits]
 
 # check where bases matched
-def check_bases(b1,b2):
-    check = ''
-    matches = 0
-    for i in range(len(b1)):
-        if b1[i] == b2[i]: 
-            check += "Y" 
-            matches += 1
-        else:
-            check += "-"
-    return [check,matches]
+# def check_bases(b1,b2):
+#     check = ''
+#     matches = 0
+#     for i in range(len(b1)):
+#         if b1[i] == b2[i]: 
+#             check += "Y" 
+#             matches += 1
+#         else:
+#             check += "-"
+#     return [check,matches]
 
-# check where measurement bits matched
-def check_bits(b1,b2,bck):
-    check = ''
-    for i in range(len(b1)):
-        if b1[i] == b2[i] and bck[i] == 'Y':
-            check += 'Y'
-        elif b1[i] == b2[i] and bck[i] != 'Y':
-            check += 'R'
-        elif b1[i] != b2[i] and bck[i] == 'Y':
-            check += '!'
-        elif b1[i] != b2[i] and bck[i] != 'Y':
-            check += '-'
+# # check where measurement bits matched
+# def check_bits(b1,b2,bck):
+#     check = ''
+#     for i in range(len(b1)):
+#         if b1[i] == b2[i] and bck[i] == 'Y':
+#             check += 'Y'
+#         elif b1[i] == b2[i] and bck[i] != 'Y':
+#             check += 'R'
+#         elif b1[i] != b2[i] and bck[i] == 'Y':
+#             check += '!'
+#         elif b1[i] != b2[i] and bck[i] != 'Y':
+#             check += '-'
 
-    return check
+#     return check
 
 
 
