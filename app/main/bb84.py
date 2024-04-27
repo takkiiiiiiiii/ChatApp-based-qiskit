@@ -4,6 +4,7 @@
 from sys import argv, exit
 from qiskit import *
 from qiskit import QuantumCircuit, Aer, execute
+from qiskit.providers.aer.noise import NoiseModel, ReadoutError
 from random import seed, sample
 from IPython.display import display
 import json
@@ -30,7 +31,7 @@ def bb84(user0, user1, num_qubits, len_key):
     # ae_bits = check_bits(alice_bits,eve_bits,ae_basis)
 
     # Bob measure Alice's qubit
-    qc, bob_bits = bob_measurement(qc,bob_basis)
+    qc, bob_bits = bob_measurement(qc,bob_basis, num_qubits)
 
     # eb_basis, eb_matches = check_bases(eve_basis,bob_basis)
     # eb_bits = check_bits(eve_bits,bob_bits,eb_basis)
@@ -48,6 +49,11 @@ def bb84(user0, user1, num_qubits, len_key):
     kb=''
     # Eve sifted key
     ke=''
+
+    # Alice sharekey
+    alice_sharekey = ''
+    # Bob sharekey
+    bob_sharekey = ''
 
     # アリスとボブ間で基底は一致のはずだが、ビット値が異なる(ノイズや盗聴者によるエラー)数
     err_num = 0
@@ -71,46 +77,60 @@ def bb84(user0, user1, num_qubits, len_key):
             err_num += 1
     err_str = ''.join(['!' if ka[i] != kb[i] else ' ' for i in range(len(ka))])
 
-    print("Alice's remaining bits: " + ka)
-    print("Error positions:        " + err_str)
-    print("Bob's remaining bits:   " + kb)
+    print("Alice's remaining bits:                    " + ka)
+    print("Error positions (by Eve and noise):        " + err_str)
+    print("Bob's remaining bits:                      " + kb)
 
 # Final key agreement process
 
-    selection_size = int(ab_matches/3)
-    seed(64)
-    selection_sender = [list(pair) for pair in sample(list(enumerate(ka)), selection_size)]
+# From here, it is a process of key reconciliation, but this approach will be implemented later.
+# For the time being, currently, the shifted keys are compared with each other in a single function to generate a share key. (Only eliminating error bit positions in the comparison).
 
-    # Alice sends the key information of random position
-    json_data = json.dumps(selection_sender)
-    byte_data = json_data.encode('utf-8')
-    sender_classical_channel.send(byte_data)
-
-    # Bob get the key information 
-    received_key_info = receiver_classical_channel.recv(4096)
-    received_string = received_key_info.decode('utf-8')
-    original_key_info = json.loads(received_string)
+    for i in range(len(ka)):
+        if ka[i] == kb[i]:
+            alice_sharekey += ka[i]
+            bob_sharekey += kb[i]
 
 
-    error_found = 0
+
+    # selection_size = int(ab_matches/3)
+    # seed(64)
+    # selection_sender = [list(pair) for pair in sample(list(enumerate(ka)), selection_size)]
+
+    # # Alice sends the key information of random position
+    # json_data = json.dumps(selection_sender)
+    # byte_data = json_data.encode('utf-8')
+    # sender_classical_channel.send(byte_data)
+
+    # # Bob get the key information 
+    # received_key_info = receiver_classical_channel.recv(4096)
+    # received_string = received_key_info.decode('utf-8')
+    # original_key_info = json.loads(received_string)
+
+
+    # error_found = 0
     # Bob compare the positions of his own key with information based on indices
-    print(original_key_info)
-    for pair in original_key_info:
-        if kb[pair[0]] != pair[1]:
-            error_found += 1
-            print("Bob realize that Eve interfered and abort the protocol. Then Bob sends Alice that.")
-            receiver_classical_channel.send('False'.encode('utf-8'))
-
+    # print(original_key_info)
+    # for pair in original_key_info:
+    #     if kb[pair[0]] != pair[1]:
+    #         error_found += 1
+    #         print("Bob realize that Eve interfered and abort the protocol. Then Bob sends Alice that.")
+    #         receiver_classical_channel.send('False'.encode('utf-8'))
+    
     sender_classical_channel.close()
     receiver_classical_channel.close()
 
-    if error_found > 0:
-        return -1, -1
-    else:      
-        # Compare each basis
-        sender_key, receiver_key = compare_bases(num_qubits, ab_basis, ab_bits, alice_bits, bob_bits)
+    # if error_found > 0:
+    #     return -1, -1
+    # else:      
+    #     # Compare each basis
+    #     sender_key, receiver_key = compare_bases(num_qubits, ab_basis, ab_bits, alice_bits, bob_bits)
         
-        return sender_key, receiver_key
+    print("Alice's sharekey ", alice_sharekey)
+    print("Bob's sharekey ", bob_sharekey)
+    
+
+    return alice_sharekey, bob_sharekey
 
 
 def qrng(n):
@@ -146,21 +166,33 @@ def encode_qubits(n,k,a):
     return qc
 
 
-# qubit measurements in specified bases
 # b = Bob's basis infomation
-def bob_measurement(qc,b):
+# Bob has some error by noise. That means that his sequence of bit is different from Alice's 
+def bob_measurement(qc,b, num_qubits):
     l = len(b)
     for i in range(l): 
         if b[i] == '1': # In case of Diagonal basis
             qc.h(i)
 
+
+    # Create the Noise Model and apply noise to qubits
+    noise_model = NoiseModel()
+    for i in range(0, num_qubits):
+        noise_model.add_readout_error(
+        error = ReadoutError([[0.5, 0.5],
+                              [0,   1]]),
+        qubits = [i]
+    )
+
+
     qc.measure(list(range(l)),list(range(l))) 
-    result = execute(qc,backend,shots=1).result() 
+    result = execute(qc,backend,shots=1, noise_model=noise_model).result() 
     bits = list(result.get_counts().keys())[0]
     bits = ''.join(list(reversed(bits)))
 
     qc.barrier() 
     return [qc,bits]
+
 
 
 # check where bases matched
@@ -284,3 +316,5 @@ def intercept_resend(qc,e):
 #     backend.run(transpiled_qc)
 
 #     return qc
+
+
