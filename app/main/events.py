@@ -15,7 +15,7 @@ room_users = []
 client_rooms = {}
 
 len_key = 2048
-num_qubits = 20
+num_qubits = 23
 
 class User:
     def __init__(self, username: str, sharekey, socket_classical, socket_quantum):

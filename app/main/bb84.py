@@ -8,12 +8,14 @@ from qiskit.providers.aer.noise import NoiseModel, ReadoutError
 from random import seed, sample
 from IPython.display import display
 import json
+import time
 
 
 backend = Aer.get_backend('qasm_simulator')
 
 
 def bb84(user0, user1, num_qubits, len_key):
+    start = time.time()
     alice_bits = qrng(num_qubits)
     alice_basis = qrng(num_qubits)
     bob_basis = qrng(num_qubits)
@@ -73,7 +75,7 @@ def bb84(user0, user1, num_qubits, len_key):
             kb += bob_bits[i]
         if ae_basis[i] == 'Y': # アリスとイヴ間で基底が一致
             ke += eve_bits[i]
-        if ab_bits[i] == '!': # アリスとボブ間で基底は一致のはずだが、ビット値が異なる (イヴによって、量子ビットの状態が変化)
+        if ab_bits[i] == '!': # アリスとボブ間で基底は一致のはずだが、ビット値が異なる (イヴもしくはノイズによって、量子ビットの状態が変化)
             err_num += 1
     err_str = ''.join(['!' if ka[i] != kb[i] else ' ' for i in range(len(ka))])
 
@@ -128,6 +130,10 @@ def bb84(user0, user1, num_qubits, len_key):
         
     print("Alice's sharekey ", alice_sharekey)
     print("Bob's sharekey ", bob_sharekey)
+
+    end = time.time()
+
+    print("Running time to generate share key: ", end-start)
     
 
     return alice_sharekey, bob_sharekey
@@ -179,7 +185,7 @@ def bob_measurement(qc,b, num_qubits):
     noise_model = NoiseModel()
     for i in range(0, num_qubits):
         noise_model.add_readout_error(
-        error = ReadoutError([[0.5, 0.5],
+        error = ReadoutError([[0.4, 0.6],
                               [0,   1]]),
         qubits = [i]
     )
@@ -187,6 +193,8 @@ def bob_measurement(qc,b, num_qubits):
 
     qc.measure(list(range(l)),list(range(l))) 
     result = execute(qc,backend,shots=1, noise_model=noise_model).result() 
+    # result = execute(qc,backend,shots=1).result() 
+
     bits = list(result.get_counts().keys())[0]
     bits = ''.join(list(reversed(bits)))
 
