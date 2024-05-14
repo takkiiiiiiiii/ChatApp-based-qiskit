@@ -2,9 +2,8 @@
 # qkd/bb84.py
 
 from sys import argv, exit
-from qiskit import *
 from qiskit import QuantumCircuit, Aer, execute
-from qiskit.providers.aer.noise import NoiseModel, ReadoutError
+from qiskit_aer.noise import NoiseModel, ReadoutError
 from random import seed, sample
 from IPython.display import display
 import json
