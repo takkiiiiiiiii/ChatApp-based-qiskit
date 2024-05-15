@@ -5,7 +5,6 @@ from qiskit_aer.noise import (NoiseModel, QuantumError, pauli_error, depolarizin
 
 backend = Aer.get_backend('qasm_simulator')
 qc = QuantumCircuit(4)
-qc.measure_all()
 
 p_meas = 0.01
 
@@ -14,6 +13,7 @@ error_meas = pauli_error([('X', p_meas), ('I', 1 - p_meas)])
 noise_model = NoiseModel()
 noise_model.add_all_qubit_quantum_error(error_meas, "measure")
 
+qc.measure_all()
 result = execute(qc,backend,shots=1000, noise_model=noise_model).result() 
 # result = execute(qc,backend,shots=1000).result() 
 
