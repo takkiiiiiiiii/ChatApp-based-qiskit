@@ -48,7 +48,7 @@ def bb84(user0, user1, num_qubits, len_key):
     ae_basis, ae_match = check_bases(alice_basis, eve_basis)
     # Comparison their bits between Alice and Eve
     # ae_bits = check_bits(alice_bits,eve_bits,ae_basis)
-
+    
     # Bob measure Alice's qubit
     qc, bob_bits = bob_measurement(qc,bob_basis, num_qubits)
 
@@ -130,9 +130,11 @@ def qrng(n):
     qc.measure(list(range(n)),list(range(n)))
     # shot - Number of repetitions of each circuit for sampling
     # Return the results of the job.
-    result = execute(qc,backend,shots=1).result() 
-    bits = list(result.get_counts().keys())[0] 
-    bits = ''.join(list(reversed(bits)))
+    result = execute(qc,backend,shots=1).result()
+    counts = result.get_counts(0)
+    max_key = max(counts, key=counts.get)
+    # bits = list(result.get_couents().keys())[0] 
+    bits = ''.join(list(reversed(max_key))) 
     return bits
 
 
@@ -172,21 +174,24 @@ def bob_measurement(qc,b, num_qubits):
     #     qubits = [i]
     # )
 
-    p_meas = 0.99 # Probability of error
+    p_meas = 0.05 # Probability of error
     error_meas = pauli_error([('X', p_meas), ('I', 1 - p_meas)])
     noise_model = NoiseModel()
     noise_model.add_all_qubit_quantum_error(error_meas, "measure")
 
     qc.measure(list(range(l)),list(range(l))) 
-    result = execute(qc,backend,shots=1, noise_model=noise_model).result() 
+    result = execute(qc,backend,shots=10, noise_model=noise_model).result() 
     # result = execute(qc,backend,shots=1).result()
 
-    bits = list(result.get_counts().keys())[0]
-    bits = ''.join(list(reversed(bits)))
+    # bits = list(result.get_counts().keys())[0]
+    # bits = ''.join(list(reversed(bits)))
+    counts = result.get_counts(0)
+    max_key = max(counts, key=counts.get)
+    # bits = counts.most_frequent()
+    bits = ''.join(list(reversed(max_key)))
 
     qc.barrier() 
     return [qc,bits]
-
 
 
 # check where bases matched
@@ -244,8 +249,10 @@ def intercept_resend(qc,e):
 
     qc.measure(list(range(l)),list(range(l))) 
     result = execute(qc,backend,shots=1).result() 
-    bits = list(result.get_counts().keys())[0] 
-    bits = ''.join(list(reversed(bits)))
+    counts = result.get_counts(0)
+    max_key = max(counts, key=counts.get)
+    # bits = list(result.get_counts().keys())[0] 
+    bits = ''.join(list(reversed(max_key)))
 
     qc.reset(list(range(l))) # Reset the quantum bit(s) to their default state すべての量子ビットの状態を|0>にする
     
@@ -261,7 +268,7 @@ def intercept_resend(qc,e):
             else:
                 qc.x(i)
                 qc.h(i)
-    # Qiskit回路における「バリア（barrier）」は、量子ビットの状態に影響を与えない特別な操作で、回路設計や最適化において視覚的・操作的な支援を提供　
+    # Qiskit回路における「バリア（barrier）」は、量子ビットの状態に影響を与えない特別な操作で、回路設計や最適化において視覚的・操作的な支援を提供
     qc.barrier()
     return [qc,bits]
 

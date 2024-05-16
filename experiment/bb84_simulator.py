@@ -130,7 +130,7 @@ def qrng(n):
     qc.measure(list(range(n)),list(range(n)))
     # shot - Number of repetitions of each circuit for sampling
     # Return the results of the job.
-    result = execute(qc,backend,shots=1).result() 
+    result = execute(qc,backend,shots=10).result() 
     bits = list(result.get_counts().keys())[0] 
     bits = ''.join(list(reversed(bits)))
     return bits
@@ -175,8 +175,8 @@ def bob_measurement(qc,b, num_qubits):
 
     qc.measure(list(range(l)),list(range(l))) 
     # result = execute(qc,backend,shots=1, noise_model=noise_model).result() 
-    result = execute(qc,backend,shots=1000).result() 
-
+    result = execute(qc,backend,shots=10).result() 
+    
     bits = list(result.get_counts().keys())[0]
     bits = ''.join(list(reversed(bits)))
 
@@ -239,8 +239,9 @@ def intercept_resend(qc,e):
             qc.h(i)
 
     qc.measure(list(range(l)),list(range(l))) 
-    result = execute(qc,backend,shots=1).result() 
-    bits = list(result.get_counts().keys())[0] 
+    result = execute(qc,backend,shots=10).result() 
+    bits = list(result.get_counts().keys())[0]
+   
     bits = ''.join(list(reversed(bits)))
 
     qc.reset(list(range(l))) # Reset the quantum bit(s) to their default state すべての量子ビットの状態を|0>にする
