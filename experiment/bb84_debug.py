@@ -9,7 +9,7 @@ count = 100
 total = 0
 ave_err_num = 0
 len_key = 2048
-num_qubit_linux = 5 # for Linux
+num_qubit_linux = 3 # for Linux
 num_qubit_mac = 24 # for mac
 backend = Aer.get_backend('qasm_simulator')
 
@@ -123,12 +123,15 @@ def bb84(user0, user1, num_qubits, len_key):
 
 def qrng(n):
     # generate n-bit string from measurement on n qubits using QuantumCircuit
-    qc = QuantumCircuit(n,n)
+    # qc = QuantumCircuit(n,n)
+    qc = QuantumCircuit(n)
     for i in range(n):
         qc.h(i) # The Hadamard gate has the effect of projecting a qubit to a 0 or 1 state with equal probability.
     # measure qubits 0, 1 & 2 to classical bits 0, 1 & 2 respectively
-    qc.measure(list(range(n)),list(range(n)))
-    # shot - Number of repetitions of each circuit for sampling
+    # qc.measure(list(range(n)),list(range(n)))
+    # qc.measure(list(range(n)))
+    qc.measure_all()
+    # shots - Number of repetitions of each circuit for sampling
     # Return the results of the job.
     result = execute(qc,backend,shots=1).result()
     counts = result.get_counts(0)
@@ -142,7 +145,8 @@ def qrng(n):
 # qubit encodings in specified bases
 def encode_qubits(n,k,a):
     # Create quantum circuit with n qubits and n classical bits
-    qc = QuantumCircuit(n,n) 
+    # qc = QuantumCircuit(n,n) 
+    qc = QuantumCircuit(n)
     for i in range(n):
         if a[i] == '0':
             if k[i] == '1':
@@ -166,21 +170,14 @@ def bob_measurement(qc,b, num_qubits):
             qc.h(i)
 
 
-    # Create the Noise Model and apply noise to qubits
-    # noise_model = NoiseModel()
-    # for i in range(0, num_qubits):
-    #     noise_model.add_readout_error(
-    #     error = ReadoutError([[0.4, 0.6],
-    #                           [0,   1]]),
-    #     qubits = [i]
-    # )
-
     p_meas = 1.0 # Probability of error
     error_meas = pauli_error([('X', p_meas), ('I', 1 - p_meas)])
     noise_model = NoiseModel()
     noise_model.add_all_qubit_quantum_error(error_meas, "measure")
 
-    qc.measure(list(range(l)),list(range(l))) 
+    # qc.measure(list(range(l)),list(range(l))) 
+    # qc.measure(list(range(l))) 
+    qc.measure_all()
     result = execute(qc,backend,shots=10, noise_model=noise_model).result() 
     # result = execute(qc,backend,shots=1).result()
 
@@ -190,6 +187,7 @@ def bob_measurement(qc,b, num_qubits):
     max_key = max(counts, key=counts.get)
     # bits = counts.most_frequent()
     bits = ''.join(list(reversed(max_key)))
+    print(counts)
     print("Bob bits: " + bits)
 
     qc.barrier() 
@@ -226,7 +224,8 @@ def check_bits(b1,b2,bck):
 
 
 def compose_quantum_circuit(n, alice_bits, a) -> QuantumCircuit:
-    qc = QuantumCircuit(n,n)
+    # qc = QuantumCircuit(n,n)
+    qc = QuantumCircuit(n)
     qc.measure_all()
     qc.compose(encode_qubits(n, alice_bits, a), inplace=True)
     return qc
