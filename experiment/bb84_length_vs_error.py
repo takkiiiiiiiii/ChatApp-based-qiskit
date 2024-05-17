@@ -50,7 +50,7 @@ def bb84(user0, user1, num_qubits, len_key):
     # ae_bits = check_bits(alice_bits,eve_bits,ae_basis)
     
     # Bob measure Alice's qubit
-    qc, bob_bits = bob_measurement(qc,bob_basis, num_qubits)
+    qc, bob_bits = bob_measurement(qc, bob_basis, num_qubits)
 
     # eb_basis, eb_matches = check_bases(eve_basis,bob_basis)
     # eb_bits = check_bits(eve_bits,bob_bits,eb_basis)
@@ -164,16 +164,6 @@ def bob_measurement(qc,b, num_qubits):
     for i in range(l): 
         if b[i] == '1': # In case of Diagonal basis
             qc.h(i)
-
-
-    # Create the Noise Model and apply noise to qubits
-    # noise_model = NoiseModel()
-    # for i in range(0, num_qubits):
-    #     noise_model.add_readout_error(
-    #     error = ReadoutError([[0.4, 0.6],
-    #                           [0,   1]]),
-    #     qubits = [i]
-    # )
 
     p_meas = 1.0 # Probability of error
     error_meas = pauli_error([('X', p_meas), ('I', 1 - p_meas)])
