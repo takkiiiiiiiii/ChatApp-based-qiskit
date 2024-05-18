@@ -8,7 +8,7 @@ from IPython.display import display
 count = 100
 total = 0
 len_key = 2048
-num_qubit_linux = 15 # for Linux
+num_qubit_linux = 22 # for Linux
 num_qubit_mac = 24 # for mac
 backend = Aer.get_backend('qasm_simulator')
 
@@ -115,10 +115,10 @@ def bb84(user0, user1, num_qubits, len_key):
     print("Alice's sharekey ", alice_sharekey)
     print("Bob's sharekey ", bob_sharekey)
 
-    # key_length = len(alice_sharekey)
-    sifted_key_length = len(ka)
+    sharekey_length = len(alice_sharekey)
+    siftedkey_length = len(ka)
 
-    return err_num, sifted_key_length
+    return err_num, siftedkey_length, sharekey_length
 
 
 def qrng(n):
@@ -133,7 +133,6 @@ def qrng(n):
     result = execute(qc,backend,shots=1).result()
     counts = result.get_counts(0)
     max_key = max(counts, key=counts.get)
-    # bits = list(result.get_couents().keys())[0] 
     bits = ''.join(list(reversed(max_key))) 
     return bits
 
@@ -164,7 +163,7 @@ def bob_measurement(qc,b, num_qubits):
         if b[i] == '1': # In case of Diagonal basis
             qc.h(i)
 
-    p_meas = 0.7 # Probability of error
+    p_meas = 0.1 # Probability of error
     error_meas = pauli_error([('X', p_meas), ('I', 1 - p_meas)])
     noise_model = NoiseModel()
     noise_model.add_all_qubit_quantum_error(error_meas, "measure")
@@ -272,19 +271,19 @@ def intercept_resend(qc,e):
 def main():
     total_err_rate = 0
     total_err_num = 0
-    total_sifted_key_length = 0
+    total_sharekey_length = 0
     for i in range(count):
-        err_num, sifted_ey_length = bb84(user0, user1, num_qubit_linux, len_key)
+        err_num, siftedkey_length, sharekey_length = bb84(user0, user1, num_qubit_linux, len_key)
         print("Nmber of Errors to generate share key: ", err_num, "\n\n")
         total_err_num += err_num
         # Calculate Error rate
-        err_rate = err_num / sifted_ey_length
+        err_rate = err_num / siftedkey_length
         total_err_rate += err_rate
-        total_sifted_key_length += sifted_ey_length
+        total_sharekey_length += sharekey_length
 
     ave_err_rate = total_err_rate / count
     ave_err_num = total_err_num / count
-    ave_key_length = total_sifted_key_length / count
+    ave_key_length = total_sharekey_length / count
     print(f'Average error rate to generate the sharekey ({count} times); {ave_err_rate}\n\n')
     print(f'Average number of error to generate the sharekey ({count} times); {ave_err_num}\n\n')
     print(f'Average number of Key length ({count} times); {ave_key_length}\n\n')
