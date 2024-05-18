@@ -7,9 +7,8 @@ from IPython.display import display
 
 count = 100
 total = 0
-ave_err_num = 0
 len_key = 2048
-num_qubit_linux = 5 # for Linux
+num_qubit_linux = 15 # for Linux
 num_qubit_mac = 24 # for mac
 backend = Aer.get_backend('qasm_simulator')
 
@@ -96,9 +95,9 @@ def bb84(user0, user1, num_qubits, len_key):
             err_num += 1
     err_str = ''.join(['!' if ka[i] != kb[i] else ' ' for i in range(len(ka))])
 
-    print("Alice's remaining bits:                    " + ka)
+    print("Alice's sifted keys:                       " + ka)
     print("Error positions (by Eve and noise):        " + err_str)
-    print("Bob's remaining bits:                      " + kb)
+    print("Bob's sifted keys:                         " + kb)
 
 # Final key agreement process
 
@@ -116,9 +115,10 @@ def bb84(user0, user1, num_qubits, len_key):
     print("Alice's sharekey ", alice_sharekey)
     print("Bob's sharekey ", bob_sharekey)
 
-    key_length = len(alice_sharekey)
+    # key_length = len(alice_sharekey)
+    sifted_key_length = len(ka)
 
-    return err_num, key_length
+    return err_num, sifted_key_length
 
 
 def qrng(n):
@@ -135,7 +135,6 @@ def qrng(n):
     max_key = max(counts, key=counts.get)
     # bits = list(result.get_couents().keys())[0] 
     bits = ''.join(list(reversed(max_key))) 
-    print(bits)
     return bits
 
 
@@ -165,7 +164,7 @@ def bob_measurement(qc,b, num_qubits):
         if b[i] == '1': # In case of Diagonal basis
             qc.h(i)
 
-    p_meas = 1.0 # Probability of error
+    p_meas = 0.7 # Probability of error
     error_meas = pauli_error([('X', p_meas), ('I', 1 - p_meas)])
     noise_model = NoiseModel()
     noise_model.add_all_qubit_quantum_error(error_meas, "measure")
@@ -217,7 +216,7 @@ def check_bits(b1,b2,bck):
 
 def compose_quantum_circuit(n, alice_bits, a) -> QuantumCircuit:
     qc = QuantumCircuit(n,n)
-    qc.measure_all()
+    # qc.measure_all()
     qc.compose(encode_qubits(n, alice_bits, a), inplace=True)
     return qc
 
@@ -267,19 +266,27 @@ def intercept_resend(qc,e):
 
 # execute 1000 times
 
+
+
+
 def main():
-    err_num = 0
+    total_err_rate = 0
     total_err_num = 0
-    key_length = 0
-    total_key_length = 0
+    total_sifted_key_length = 0
     for i in range(count):
-        err_num, key_length = bb84(user0, user1, num_qubit_linux, len_key)
+        err_num, sifted_ey_length = bb84(user0, user1, num_qubit_linux, len_key)
         print("Nmber of Errors to generate share key: ", err_num, "\n\n")
         total_err_num += err_num
-        total_key_length += key_length
+        # Calculate Error rate
+        err_rate = err_num / sifted_ey_length
+        total_err_rate += err_rate
+        total_sifted_key_length += sifted_ey_length
+
+    ave_err_rate = total_err_rate / count
     ave_err_num = total_err_num / count
-    ave_key_length = total_key_length / count
-    print(f'Average number of Errors to generate the sharekey ({count} times); {ave_err_num}\n\n')
+    ave_key_length = total_sifted_key_length / count
+    print(f'Average error rate to generate the sharekey ({count} times); {ave_err_rate}\n\n')
+    print(f'Average number of error to generate the sharekey ({count} times); {ave_err_num}\n\n')
     print(f'Average number of Key length ({count} times); {ave_key_length}\n\n')
 
 
