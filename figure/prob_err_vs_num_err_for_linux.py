@@ -2,17 +2,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 qbit = np.array([1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 99])
-err_num = np.array([0.19, 1.14, 2.0, 3.66, 4.46, 5.26, 5.39, 5.09, 4.80, 3.56, 1.89, 0.28])
+err_num = np.array([0.07, 0.54, 0.97, 2.08, 3.43, 4.14, 4.74, 6.61, 7.67, 8.91, 9.81, 10.74])
 
 plt.figure(figsize=(8, 5))
 
 plt.plot(qbit, err_num, ls='-', marker='o')
 
-plt.xlim(1, 100)
-plt.ylim(0, 6)
+plt.xlim(0, 100)
+plt.ylim(0, 11)
 
-plt.xticks(np.arange(0, 110, 5))
-plt.yticks(np.arange(0, 6, 0.5))
+plt.xticks(np.arange(0, 100, 5))
+plt.yticks(np.arange(0, 11, 0.5))
 
 plt.xlabel(r'Probability of error')
 plt.ylabel(r'Number of errors')
