@@ -32,11 +32,21 @@
 * Qiskit provides some quantum simulators from IBM cloud platform.
     * Alice and Bob use the Quantum Channel Simulator on the IBM platform and Classical channel for BB84 protocol
     * Quantum Channel Simulator is used for processes related to Qubit (decide and measure Qubit)
-    ![](reference/framework_qiskit.png)
+    ![framework_qiskit](reference/framework_qiskit.png)
 
 ## Flowchart of QKD protocol (BB84)
 * Steps to share a shared key (secret key) between Alice and Bob.
-![](reference/flowchart_bb84.png)
+![flowchart_bb84](reference/flowchart_bb84.png)
 
-## The result of simulations
+## Flowchart of chat application based on QKD
+* Simple steps for communication between Alice and Bob.
+![flowchart_bb84](reference/flowchart._chat.png)
+
+
+
+<br><br>
+
+# Report of simulation
+## 
+
 
