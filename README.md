@@ -20,7 +20,7 @@
     ![overview of bb84](reference/overview_bb84.png)
 
 
-## Development of Secure chat application based on QKD
+## Development of Secure chat application based on QKD (using **Qiskit**)
 * Develop secure chat application based on QKD
     * **The BB84 protocol**  can be applied for sharing secret keys between two legitimate users
     * **Qiskit**, is a python library by IBM helps develop application using QKD
@@ -38,4 +38,5 @@
 * Steps to share a shared key (secret key) between Alice and Bob.
 ![](reference/flowchart_bb84.png)
 
+## The result of simulations
 
