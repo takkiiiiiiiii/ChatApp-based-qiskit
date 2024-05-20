@@ -3,18 +3,15 @@
 
 from sys import argv, exit
 from qiskit import QuantumCircuit, Aer, execute
-from qiskit_aer.noise import NoiseModel, ReadoutError
+from qiskit_aer.noise import (NoiseModel, QuantumError, pauli_error, depolarizing_error)
 from random import seed, sample
 from IPython.display import display
 import json
-import time
-
 
 backend = Aer.get_backend('qasm_simulator')
 
 
 def bb84(user0, user1, num_qubits, len_key):
-    start = time.time()
     alice_bits = qrng(num_qubits)
     alice_basis = qrng(num_qubits)
     bob_basis = qrng(num_qubits)
@@ -31,8 +28,11 @@ def bb84(user0, user1, num_qubits, len_key):
     # Comparison their bits between Alice and Eve
     # ae_bits = check_bits(alice_bits,eve_bits,ae_basis)
 
+    # Apply the quantum error channel
+    noise_model = apply_noise_model()
+
     # Bob measure Alice's qubit
-    qc, bob_bits = bob_measurement(qc,bob_basis, num_qubits)
+    qc, bob_bits = bob_measurement(qc,bob_basis, noise_model)
 
     # eb_basis, eb_matches = check_bases(eve_basis,bob_basis)
     # eb_bits = check_bits(eve_bits,bob_bits,eb_basis)
@@ -83,7 +83,6 @@ def bb84(user0, user1, num_qubits, len_key):
     print("Bob's remaining bits:                      " + kb)
 
 # Final key agreement process
-
 # From here, it is a process of key reconciliation, but this approach will be implemented later.
 # For the time being, currently, the shifted keys are compared with each other in a single function to generate a share key. (Only eliminating error bit positions in the comparison).
 
@@ -93,47 +92,11 @@ def bb84(user0, user1, num_qubits, len_key):
             bob_sharekey += kb[i]
 
 
-
-    # selection_size = int(ab_matches/3)
-    # seed(64)
-    # selection_sender = [list(pair) for pair in sample(list(enumerate(ka)), selection_size)]
-
-    # # Alice sends the key information of random position
-    # json_data = json.dumps(selection_sender)
-    # byte_data = json_data.encode('utf-8')
-    # sender_classical_channel.send(byte_data)
-
-    # # Bob get the key information 
-    # received_key_info = receiver_classical_channel.recv(4096)
-    # received_string = received_key_info.decode('utf-8')
-    # original_key_info = json.loads(received_string)
-
-
-    # error_found = 0
-    # Bob compare the positions of his own key with information based on indices
-    # print(original_key_info)
-    # for pair in original_key_info:
-    #     if kb[pair[0]] != pair[1]:
-    #         error_found += 1
-    #         print("Bob realize that Eve interfered and abort the protocol. Then Bob sends Alice that.")
-    #         receiver_classical_channel.send('False'.encode('utf-8'))
-    
     sender_classical_channel.close()
     receiver_classical_channel.close()
-
-    # if error_found > 0:
-    #     return -1, -1
-    # else:      
-    #     # Compare each basis
-    #     sender_key, receiver_key = compare_bases(num_qubits, ab_basis, ab_bits, alice_bits, bob_bits)
         
     print("Alice's sharekey ", alice_sharekey)
     print("Bob's sharekey ", bob_sharekey)
-
-    end = time.time()
-
-    print("Running time to generate share key: ", end-start)
-    
 
     return alice_sharekey, bob_sharekey
 
@@ -170,25 +133,21 @@ def encode_qubits(n,k,a):
     qc.barrier()
     return qc
 
+def apply_noise_model():
+    p_meas = 0.1
+    error_meas = pauli_error([('X', p_meas), ('I', 1 - p_meas)])
+    noise_model = NoiseModel()
+    noise_model.add_all_qubit_quantum_error(error_meas, "measure")
+
+    return noise_model
 
 # b = Bob's basis infomation
 # Bob has some error by noise. That means that his sequence of bit is different from Alice's 
-def bob_measurement(qc,b, num_qubits):
+def bob_measurement(qc,b, noise_model):
     l = len(b)
     for i in range(l): 
         if b[i] == '1': # In case of Diagonal basis
             qc.h(i)
-
-
-    # Create the Noise Model and apply noise to qubits
-    noise_model = NoiseModel()
-    for i in range(0, num_qubits):
-        noise_model.add_readout_error(
-        error = ReadoutError([[0.4, 0.6],
-                              [0,   1]]),
-        qubits = [i]
-    )
-
 
     qc.measure(list(range(l)),list(range(l))) 
     result = execute(qc,backend,shots=1, noise_model=noise_model).result() 
