@@ -6,7 +6,7 @@ from flask import session, request
 from flask_socketio import emit, join_room, leave_room, send, Namespace
 from .. import socketio
 # import threading
-from app.main.bb84 import bb84
+from app.main.qkd import bb84
 import pickle
 
 # global_data_lock = threading.Lock()
@@ -63,7 +63,7 @@ def joined(message):
         current_sender_key = ''
         current_receiver_key = ''
 
-        sender_key_part, receiver_key_part = bb84(user0, user1, num_qubits, len_key) # create a part of shareKey
+        sender_key_part, receiver_key_part = bb84(user0, user1, num_qubits) # create a part of shareKey
 
         while len(current_sender_key) <= len_key:
             current_sender_key += sender_key_part
@@ -74,10 +74,6 @@ def joined(message):
         hash_key = hashlib.sha256(current_receiver_key.encode())
         emit('status', {'msg': session.get('name') + ' has entered the room.', 'room_user_count' : room_user_count, 'sharekey' : hash_key.hexdigest()}, room=room)
         return
-
-    # else:
-    #     print("bbbbbbb")
-    #     emit('status', {'msg': session.get('name') + ' has entered the room.', 'room_user_count' : room_user_count}, room=room)
 
     emit('status', {'msg': session.get('name') + ' has entered the room.', 'room_user_count' : room_user_count}, room=room)
 
@@ -133,6 +129,7 @@ def text(message):
     emit('message', {'msg': session.get('name') + ':' + plaintext, 'sender' : session.get('name'), 'updatekey' : hash_key_for_user0.hexdigest(), 'usernames' : usernames}, room=room)
 
     
+# @socketio.on('server_request', namespace='/chat')
 
 
 @socketio.on('left', namespace='/chat')
@@ -145,3 +142,4 @@ def left(message):
     room_user_count -= 1
     leave_room(room)
     emit('status', {'msg': session.get('name') + ' has left the room.'}, room=room)
+
