@@ -1,5 +1,4 @@
 # ==================================================================================== #
-# qkd/bb84.py
 
 from sys import argv, exit
 from qiskit import QuantumCircuit, Aer, execute
@@ -11,7 +10,7 @@ import json
 backend = Aer.get_backend('qasm_simulator')
 
 
-def bb84(user0, user1, num_qubits, len_key):
+def bb84(user0, user1, num_qubits):
     alice_bits = qrng(num_qubits)
     alice_basis = qrng(num_qubits)
     bob_basis = qrng(num_qubits)
@@ -21,7 +20,7 @@ def bb84(user0, user1, num_qubits, len_key):
     qc = compose_quantum_circuit(num_qubits, alice_bits, alice_basis)
 
     # Eve eavesdrops Alice's qubits
-    qc, eve_bits = intercept_resend(qc, eve_basis)
+    # qc, eve_bits = intercept_resend(qc, eve_basis)
 
     # Comparison their basis between Alice and Eve
     ae_basis, ae_match = check_bases(alice_basis, eve_basis)
@@ -72,8 +71,8 @@ def bb84(user0, user1, num_qubits, len_key):
         if ab_basis[i] == 'Y': # アリスとボブ間で基底が一致
             ka += alice_bits[i] 
             kb += bob_bits[i]
-        if ae_basis[i] == 'Y': # アリスとイヴ間で基底が一致
-            ke += eve_bits[i]
+        # if ae_basis[i] == 'Y': # アリスとイヴ間で基底が一致
+        #     ke += eve_bits[i]
         if ab_bits[i] == '!': # アリスとボブ間で基底は一致のはずだが、ビット値が異なる (イヴもしくはノイズによって、量子ビットの状態が変化)
             err_num += 1
     err_str = ''.join(['!' if ka[i] != kb[i] else ' ' for i in range(len(ka))])
@@ -95,9 +94,6 @@ def bb84(user0, user1, num_qubits, len_key):
     sender_classical_channel.close()
     receiver_classical_channel.close()
         
-    print("Alice's sharekey ", alice_sharekey)
-    print("Bob's sharekey ", bob_sharekey)
-
     return alice_sharekey, bob_sharekey
 
 
@@ -160,7 +156,6 @@ def bob_measurement(qc,b, noise_model):
     return [qc,bits]
 
 
-
 # check where bases matched
 def check_bases(b1,b2):
     check = ''
@@ -196,6 +191,7 @@ def compose_quantum_circuit(n, alice_bits, a) -> QuantumCircuit:
     qc.compose(encode_qubits(n, alice_bits, a), inplace=True)
     return qc
 
+
 def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
     ka = ''  # kaの初期化
     kb = ''  # kbの初期化
@@ -204,6 +200,7 @@ def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
             ka += alice_bits[i]
             kb += bob_bits[i]
     return ka, kb
+
 
 # capture qubits, measure and send to Bob
 def intercept_resend(qc,e):
@@ -222,7 +219,6 @@ def intercept_resend(qc,e):
 
     qc.reset(list(range(l))) # Reset the quantum bit(s) to their default state すべての量子ビットの状態を|0>にする
     
-
     # イヴの情報を元に、アリスと同じエンコードをして、量子ビットの偏光状態を決める
     for i in range(l):
         if e[i] == '0':
@@ -238,49 +234,4 @@ def intercept_resend(qc,e):
     qc.barrier()
     display(qc.draw())
     return [qc,bits]
-
-# check where bases matched
-# def check_bases(b1,b2):
-#     check = ''
-#     matches = 0
-#     for i in range(len(b1)):
-#         if b1[i] == b2[i]: 
-#             check += "Y" 
-#             matches += 1
-#         else:
-#             check += "-"
-#     return [check,matches]
-
-# # check where measurement bits matched
-# def check_bits(b1,b2,bck):
-#     check = ''
-#     for i in range(len(b1)):
-#         if b1[i] == b2[i] and bck[i] == 'Y':
-#             check += 'Y'
-#         elif b1[i] == b2[i] and bck[i] != 'Y':
-#             check += 'R'
-#         elif b1[i] != b2[i] and bck[i] == 'Y':
-#             check += '!'
-#         elif b1[i] != b2[i] and bck[i] != 'Y':
-#             check += '-'
-
-#     return check
-
-
-
-# def channel(qc: QuantumCircuit) -> QuantumCircuit:
-#     # error rate
-#     error_kraus = kraus_error([[[1, 0], [0, (1 - error_prob)**0.5]],
-#                           [[0, error_prob**0.5], [0, 0]]])
-#     # クラウス演算子を使用してノイズモデルを構築
-#     # 量子チャネルでのノイズによる量子情報の変化を再現
-#     # Reproducing changes in quantum information due to noise in the quantum channel.
-#     noise_model = NoiseModel()
-#     noise_model.add_quantum_error(error_kraus, 'x', list(len(n)))
-    
-#     transpiled_qc = transpile(qc, basis_gates=backend.configuration().basis_gates)
-#     backend.run(transpiled_qc)
-
-#     return qc
-
 
