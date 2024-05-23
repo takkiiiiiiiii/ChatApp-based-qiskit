@@ -65,9 +65,9 @@ def joined(message):
 
         sender_key_part, receiver_key_part = bb84(user0, user1, num_qubits) # create a part of shareKey
 
-        while len(current_sender_key) <= len_key:
-            current_sender_key += sender_key_part
-            current_receiver_key += receiver_key_part
+        # while len(current_sender_key) <= len_key:
+        #     current_sender_key += sender_key_part
+        #     current_receiver_key += receiver_key_part
 
         user0.sharekey = current_sender_key
         user1.sharekey = current_receiver_key
@@ -122,7 +122,7 @@ def text(message):
     user1.sharekey = current_receiver_key
     print(len(current_receiver_key))
 
-    hash_key_for_user0 = hashlib.sha256(current_receiver_key.encode())
+    hash_key_for_user0 = hashlib.sha256(current_sender_key.encode())
     hash_key_for_user1 = hashlib.sha256(current_receiver_key.encode())
 
     
