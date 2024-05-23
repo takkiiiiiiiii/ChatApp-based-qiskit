@@ -33,6 +33,7 @@
                         $('#chat').scrollTop($('#chat')[0].scrollHeight);
                     }
                 });
+
                 socket.on('message', function(data) {
                     var usernames =  data.usernames
                     console.log(usernames[0]);
@@ -47,6 +48,15 @@
                     var messageWithClass = '<span class="' + messageClass + '">' + data.msg + '</span><br>';
                     // $('#chat').append(messageWithClass);
                     // $('#chat').scrollTop($('#chat')[0].scrollHeight);
+                });
+
+                socket.on('messages2', function(message) {
+                    $('#messages').append('<p>' + message + '</p>');
+                });
+
+                socket.on('server_message', function(msg) {
+                    console.log('Message from server:', msg);
+                    document.getElementById('message').innerText = msg.data;
                 });
                 $('#text').keypress(function(e) {
                     var code = e.keyCode || e.which;
@@ -94,6 +104,7 @@
     <section class="about" id="about">
         <div class="wrapper">
             <h2 class="section-title">Chat Room : {{ room }}</h2>
+            <div id="messages2"></div>
             <div id="share-key" class="share-key"></div>
             <div class="sharekey-button">
                 <button onclick="toggleKey()">View Key</button>

@@ -3,6 +3,7 @@ import threading
 from threading import Thread
 import time
 
+num_qubit = 20
 
 class Generate_Key(Thread):
     def __init__(self, user0, user1, key_len):
@@ -19,7 +20,7 @@ class Generate_Key(Thread):
         receiver_key = ''
         self.lock.acquire()
         while (len(sender_key) < self.key_len and len(receiver_key) < self.key_len):
-            ka, kb = bb84(self.user0, self.user1)
+            ka, kb = bb84(self.user0, self.user1, num_qubit)
             sender_key += ka
             receiver_key += kb
         self.sender_key = sender_key
@@ -29,13 +30,5 @@ class Generate_Key(Thread):
     def run(self):
         while True:
             self.gen_key()
-            time.sleep(30)
+            # time.sleep(30)
 
-# Memo
-# How to use
-user0 = 'Alice'
-user1 = 'Bob'
-key_len = 10 
-key_generator = Generate_Key(user0, user1, key_len)
-key_generator.start()
-# key_generator.join()
