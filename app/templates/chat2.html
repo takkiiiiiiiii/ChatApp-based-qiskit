@@ -9,21 +9,24 @@
     <script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
         <script type="text/javascript" src="//cdn.socket.io/4.4.1/socket.io.min.js"></script>
         <script type="text/javascript" charset="utf-8">
-            var socket;
+            var socket, socket2;
             var user1, user2; 
             var hashkey, truncatedKey;
             $(document).ready(function(){
                 socket = io.connect('http://' + document.domain + ':' + location.port + '/chat');
+                // socket = io.connect('http://' + document.domain + ':' + location.port);
                 socket.on('connect', function() {
                     socket.emit('joined', {});
                 });
+
+
                 socket.on('status', function(data) {
                     countUser = data.room_user_count;
                     var messageClass = 'user-chat'
                     if (countUser == 2) {
-                        hashkey = data.sharekey;
-                        truncatedKey = hashkey.substring(0, 3) + '***********************************************************************************************' + hashkey.slice(-4);
-                        $('#share-key').text(truncatedKey);
+                        // hashkey = data.sharekey;
+                        // truncatedKey = hashkey.substring(0, 3) + '***********************************************************************************************' + hashkey.slice(-4);
+                        // $('#share-key').text(truncatedKey);
                         var messageWithClass = '<span class="' + messageClass + '">' + data.msg + '</span><br>';
                         $('#chat').append(messageWithClass);
                         $('#chat').scrollTop($('#chat')[0].scrollHeight);
@@ -34,6 +37,7 @@
                     }
                 });
 
+
                 socket.on('message', function(data) {
                     var usernames =  data.usernames
                     console.log(usernames[0]);
@@ -42,12 +46,19 @@
                     $('#chat').append(messageWithClass);
                     $('#chat').scrollTop($('#chat')[0].scrollHeight);
                     // update sharekey
-                    hashkey = data.updatekey;
-                    truncatedKey = hashkey.substring(0, 3) + '***********************************************************************************************' + hashkey.slice(-4);
-                    $('#share-key').text(truncatedKey);
+                    // hashkey = data.updatekey;
+                    // truncatedKey = hashkey.substring(0, 3) + '***********************************************************************************************' + hashkey.slice(-4);
+                    // $('#share-key').text(truncatedKey);
                     var messageWithClass = '<span class="' + messageClass + '">' + data.msg + '</span><br>';
                     // $('#chat').append(messageWithClass);
                     // $('#chat').scrollTop($('#chat')[0].scrollHeight);
+                });
+
+                socket.on('update_key', function(data) {
+                    var updatehashkey = data.updatekey;
+                    console.log('Received update key:', updatehashkey);
+                    var truncatedKey = updatehashkey.substring(0, 3) + '***********************************************************************************************' + updatehashkey.slice(-4);
+                    $('#share-key').text(truncatedKey);
                 });
 
                 socket.on('messages2', function(message) {
