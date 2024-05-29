@@ -22,7 +22,7 @@ current_sender_key = ''
 current_receiver_key = ''
 
 len_key = 24
-num_qubits = 10
+num_qubits = 24
 
 class User:
     def __init__(self, username: str, sharekey, socket_classical, socket_quantum):
@@ -42,32 +42,32 @@ class User:
 
 users = []
 
-# def update_key():
-#     global current_sender_key, current_receiver_key
-#     # if room_user_count == 2:
-#     key_generator = Generate_Key(users[0], users[1], len_key)
-#     key_generator.start()   
-    
-#     while True:
-#         time.sleep(10)
-#         # with key_lock:
-#         room = session.get('room')
-#         current_sender_key = key_generator.sender_key
-#         current_receiver_key = key_generator.receiver_key
-#         hash_key_for_user0 = hashlib.sha256(current_sender_key.encode())
-#         hash_key_for_user1 = hashlib.sha256(current_receiver_key.encode())
-#         # emit('message', {'updatekey' : hash_key_for_user0.hexdigest()}, room=room)
-#         print(current_receiver_key)
-#         socketio.emit('update_key', {'updatekey': hash_key_for_user0.hexdigest()}, room=room)
-
-@socketio.on('joined', namespace='/chat')
 def update_key():
+    global current_sender_key, current_receiver_key
+    print(room_user_count)
+    key_generator = Generate_Key(users[0], users[1], len_key)
+    key_generator.start()   
+    
     while True:
-        # 10秒ごとに更新されたデータを送信
-        update_key = ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20))
-        # print(update_key)
-        socketio.emit('update_key', {'updatekey': update_key}, namespace='/chat')
-        time.sleep(1)
+        time.sleep(30)
+        # with key_lock:
+        # update_key = ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20))
+        current_sender_key = key_generator.sender_key
+        print(f'Current Key: {current_sender_key}')
+        current_receiver_key = key_generator.receiver_key
+        hash_key_for_user0 = hashlib.sha256(current_sender_key.encode())
+        hash_key_for_user1 = hashlib.sha256(current_receiver_key.encode())
+        socketio.emit('update_key', {'updatekey': hash_key_for_user0.hexdigest()}, namespace='/chat')
+        # socketio.emit('update_key', {'updatekey': update_key}, namespace='/chat')
+
+
+# def update_key():
+#     while True:
+#         # 10秒ごとに更新されたデータを送信
+#         update_key = ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20))
+#         # print(update_key)
+#         socketio.emit('update_key', {'updatekey': update_key}, namespace='/chat')
+#         time.sleep(1)
 
 
 @socketio.on('joined', namespace='/chat')
@@ -88,15 +88,15 @@ def joined(message):
         room_user_count += 1
     
     if room_user_count == 2:
-        # key_generator = Generate_Key_Join(users[0], users[1], len_key)
-        # current_sender_key, current_receiver_key = key_generator.gen_key_joined()
-        # print(f'First current_sender_key : {current_sender_key}')
-        # sender_hash_key = hashlib.sha256(current_receiver_key.encode())
-        # receiver_hash_key = hashlib.sha256(current_receiver_key.encode())
-        # emit('status', {'msg': session.get('name') + ' has entered the room.', 'room_user_count' : room_user_count, 'sharekey' : sender_hash_key.hexdigest()}, room=room)
-        emit('status', {'msg': session.get('name') + ' has entered the room.', 'room_user_count' : room_user_count}, room=room)
+        key_generator = Generate_Key_Join(users[0], users[1], len_key)
+        current_sender_key, current_receiver_key = key_generator.gen_key_joined()
+        print(f'First current_sender_key : {current_sender_key}')
+        sender_hash_key = hashlib.sha256(current_receiver_key.encode())
+        receiver_hash_key = hashlib.sha256(current_receiver_key.encode())
+        emit('status', {'msg': session.get('name') + ' has entered the room.', 'room_user_count' : room_user_count, 'sharekey' : sender_hash_key.hexdigest()}, room=room)
+        # emit('status', {'msg': session.get('name') + ' has entered the room.', 'room_user_count' : room_user_count}, room=room)
 
-        # socketio.start_background_task(onetimepad)
+        socketio.start_background_task(update_key)
         return
 
     emit('status', {'msg': session.get('name') + ' has entered the room.', 'room_user_count' : room_user_count}, room=room)
@@ -104,9 +104,7 @@ def joined(message):
 
 @socketio.on('text', namespace='/chat')
 def text(message):
-
-    global current_sender_key
-    global current_receiver_key
+    global current_sender_key, current_receiver_key
 
     """Sent by a client when the user entered a new message.
     The message is sent to all people in the room."""
@@ -117,8 +115,6 @@ def text(message):
 
     ciphertext = []
     plaintext = message['msg']
-    print(f'Current_sender_key : {current_sender_key}')
-    
 
     binary_representation = ''.join(format(ord(char), '08b') for char in plaintext)
     ciphertext = [0] * len(binary_representation)
@@ -138,12 +134,11 @@ def text(message):
 
     user0.sharekey = current_sender_key
     user1.sharekey = current_receiver_key
+    print(f'Plaintext: {plaintext}')
 
-    hash_key_for_user0 = hashlib.sha256(current_sender_key.encode())
-    hash_key_for_user1 = hashlib.sha256(current_receiver_key.encode())
     
     # emit('message', {'msg': session.get('name') + ':' + plaintext, 'sender' : session.get('name'), 'updatekey' : hash_key_for_user0.hexdigest(), 'usernames' : usernames}, room=room)
-    emit('message', {'msg': session.get('name') + ':' + plaintext, 'sender' : session.get('name')}, room=room)
+    emit('message', {'msg': session.get('name') + ':' + plaintext, 'sender' : session.get('name'), 'usernames' : usernames}, namespace='/chat', room=room)
 
 
 
