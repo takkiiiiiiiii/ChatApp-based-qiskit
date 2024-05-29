@@ -77,9 +77,9 @@ def bb84(user0, user1, num_qubits):
             err_num += 1
     err_str = ''.join(['!' if ka[i] != kb[i] else ' ' for i in range(len(ka))])
 
-    print("Alice's remaining bits:                    " + ka)
-    print("Error positions (by Eve and noise):        " + err_str)
-    print("Bob's remaining bits:                      " + kb)
+    # print("Alice's remaining bits:                    " + ka)
+    # print("Error positions (by Eve and noise):        " + err_str)
+    # print("Bob's remaining bits:                      " + kb)
 
 # Final key agreement process
 # From here, it is a process of key reconciliation, but this approach will be implemented later.
@@ -130,7 +130,7 @@ def encode_qubits(n,k,a):
     return qc
 
 def apply_noise_model():
-    p_meas = 0.1
+    p_meas = 0
     error_meas = pauli_error([('X', p_meas), ('I', 1 - p_meas)])
     noise_model = NoiseModel()
     noise_model.add_all_qubit_quantum_error(error_meas, "measure")
