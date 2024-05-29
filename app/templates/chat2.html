@@ -24,9 +24,9 @@
                     countUser = data.room_user_count;
                     var messageClass = 'user-chat'
                     if (countUser == 2) {
-                        // hashkey = data.sharekey;
+                        hashkey = data.sharekey;
                         // truncatedKey = hashkey.substring(0, 3) + '***********************************************************************************************' + hashkey.slice(-4);
-                        // $('#share-key').text(truncatedKey);
+                        $('#share-key').text(hashkey);
                         var messageWithClass = '<span class="' + messageClass + '">' + data.msg + '</span><br>';
                         $('#chat').append(messageWithClass);
                         $('#chat').scrollTop($('#chat')[0].scrollHeight);
@@ -40,25 +40,19 @@
 
                 socket.on('message', function(data) {
                     var usernames =  data.usernames
-                    console.log(usernames[0]);
                     var messageClass = data.sender === usernames[0] ? 'user-chat1' : 'user-chat2';
                     var messageWithClass = '<span class="' + messageClass + '">' + data.msg + '</span><br>';
                     $('#chat').append(messageWithClass);
                     $('#chat').scrollTop($('#chat')[0].scrollHeight);
-                    // update sharekey
-                    // hashkey = data.updatekey;
-                    // truncatedKey = hashkey.substring(0, 3) + '***********************************************************************************************' + hashkey.slice(-4);
-                    // $('#share-key').text(truncatedKey);
                     var messageWithClass = '<span class="' + messageClass + '">' + data.msg + '</span><br>';
-                    // $('#chat').append(messageWithClass);
-                    // $('#chat').scrollTop($('#chat')[0].scrollHeight);
                 });
 
                 socket.on('update_key', function(data) {
                     var updatehashkey = data.updatekey;
                     console.log('Received update key:', updatehashkey);
-                    var truncatedKey = updatehashkey.substring(0, 3) + '***********************************************************************************************' + updatehashkey.slice(-4);
-                    $('#share-key').text(truncatedKey);
+                    // var truncatedKey = updatehashkey.substring(0, 3) + '***********************************************************************************************' + updatehashkey.slice(-4);
+
+                    $('#share-key').text(updatehashkey);
                 });
 
                 socket.on('messages2', function(message) {
@@ -86,15 +80,15 @@
                 });
             }
 
-            function toggleKey() {
-                var keyElement = document.getElementById('share-key');
+            // function toggleKey() {
+            //     var keyElement = document.getElementById('share-key');
 
-                if (keyElement.innerHTML === truncatedKey) {
-                    keyElement.innerHTML = hashkey;
-                } else {
-                    keyElement.innerHTML = truncatedKey;
-                }
-            }
+            //     if (keyElement.innerHTML === truncatedKey) {
+            //         keyElement.innerHTML = hashkey;
+            //     } else {
+            //         keyElement.innerHTML = truncatedKey;
+            //     }
+            // }
         </script>
     <!-- ヘッダー -->
     <header>
@@ -117,11 +111,12 @@
             <h2 class="section-title">Chat Room : {{ room }}</h2>
             <div id="messages2"></div>
             <div id="share-key" class="share-key"></div>
-            <div class="sharekey-button">
+            <!-- <div class="sharekey-button">
                 <button onclick="toggleKey()">View Key</button>
-            </div>
+            </div> -->
             <!-- <span id="message" class="user-chat"></span> -->
             <!-- <textarea id="chat"></textarea><br><br> -->
+            <br><br><br><br>
             <div id="chat" contenteditable="false" class="chat-container"></div>
             <input id="text" placeholder="Enter your message here"><br><br>
             <a class="leave" href="#" onclick="leave_room();">Leave this room</a>
@@ -133,26 +128,7 @@
         <div class="footer-logo">Chat App Base Quantum Key Distribution</div>
         <div class="footer-list">
           <ul>
-            <!-- <a class="footer-link" href="#about">
-                <li>
-                    <p class="footer-subtitle">About</p>
-                </li>
-            </a>
-            <a class="footer-link" href="#product">
-                <li>
-                    <p class="footer-subtitle">Product</p>
-                </li>
-            </a>
-            <a class="footer-link" href="#hobby">
-                <li>
-                    <p class="footer-subtitle">Hobby</p>
-                </li>
-            </a>
-            <a class="footer-link" href="#study">
-                <li>
-                    <p class="footer-subtitle">Study</p>
-                </li>
-            </a> -->
+            
           </ul>
         </div>
     </div>

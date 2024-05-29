@@ -80,9 +80,11 @@ img {
     color: #082024;
 }
 
+
 .share-key {
     background-color: aqua;
-    font-size: 28.5px;
+    font-size: 32px;
+    text-align: center;
 }
 
 .sharekey-button {
