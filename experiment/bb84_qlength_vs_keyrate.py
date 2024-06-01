@@ -8,7 +8,7 @@ import time
 count = 100
 ave_time = 0
 len_key = 1024
-num_qubit_linux = 24 # for Linux
+num_qubit_linux = 18 # for Linux
 num_qubit_mac = 24 # for mac
 backend = Aer.get_backend('qasm_simulator')
 
