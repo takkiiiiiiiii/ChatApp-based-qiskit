@@ -23,6 +23,7 @@ current_receiver_key = ''
 
 len_key = 24
 num_qubits = 24
+interval = 20 
 
 class User:
     def __init__(self, username: str, sharekey, socket_classical, socket_quantum):
@@ -47,9 +48,8 @@ def update_key():
     print(room_user_count)
     key_generator = Generate_Key(users[0], users[1], len_key)
     key_generator.start()   
-    
     while True:
-        time.sleep(30)
+        time.sleep(interval)
         # with key_lock:
         # update_key = ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20))
         current_sender_key = key_generator.sender_key
@@ -57,7 +57,7 @@ def update_key():
         current_receiver_key = key_generator.receiver_key
         hash_key_for_user0 = hashlib.sha256(current_sender_key.encode())
         hash_key_for_user1 = hashlib.sha256(current_receiver_key.encode())
-        socketio.emit('update_key', {'updatekey': hash_key_for_user0.hexdigest()}, namespace='/chat')
+        socketio.emit('update_key', {'updatekey': hash_key_for_user0.hexdigest(), "interval": interval}, namespace='/chat')
         # socketio.emit('update_key', {'updatekey': update_key}, namespace='/chat')
 
 
@@ -93,7 +93,7 @@ def joined(message):
         print(f'First current_sender_key : {current_sender_key}')
         sender_hash_key = hashlib.sha256(current_receiver_key.encode())
         receiver_hash_key = hashlib.sha256(current_receiver_key.encode())
-        emit('status', {'msg': session.get('name') + ' has entered the room.', 'room_user_count' : room_user_count, 'sharekey' : sender_hash_key.hexdigest()}, room=room)
+        emit('status', {'msg': session.get('name') + ' has entered the room.', 'room_user_count' : room_user_count, 'sharekey' : sender_hash_key.hexdigest(), "interval": interval}, room=room)
         # emit('status', {'msg': session.get('name') + ' has entered the room.', 'room_user_count' : room_user_count}, room=room)
 
         socketio.start_background_task(update_key)
