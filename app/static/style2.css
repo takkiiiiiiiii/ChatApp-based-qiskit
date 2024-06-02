@@ -83,7 +83,8 @@ img {
 
 .share-key {
     background-color: aqua;
-    font-size: 32px;
+    font-size: 28px;
+    width: 100%;
     text-align: center;
 }
 
@@ -125,6 +126,22 @@ img {
 .sharekey-button button:hover:before {
     width: 100%;
     z-index: -1;
+}
+
+#progress1 {
+    width: 100%; /* 幅を100%に設定 */
+    height: 20px; /* 高さを20pxに設定 */
+    border: 1px solid #ccc; /* 枠線を付ける */
+    border-radius: 5px; /* 枠線の角を丸める */
+    background-color: #f3f3f3; /* 背景色を設定 */
+}
+
+#progress1::-webkit-progress-value {
+    background-color: #4CAF50; /* プログレスバーの進捗部分の背景色を設定 */
+}
+
+#progress1::-webkit-progress-bar {
+    background-color: #f3f3f3; /* プログレスバーの背景色を設定 */
 }
 
 

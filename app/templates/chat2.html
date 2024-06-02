@@ -24,6 +24,23 @@
                     countUser = data.room_user_count;
                     var messageClass = 'user-chat'
                     if (countUser == 2) {
+                        let count = data.interval;
+                        let timeoutId = null;
+
+                        function countdown() {
+                            document.getElementById('progress1').value = count;
+                            // document.getElementById('output1').value = count + 'sec';
+        
+                            if (count <= 0) {
+                                clearTimeout(timeoutId);
+                            }
+                                count -= 1;
+                            }
+                        // 最初に一度実行
+                        countdown();
+
+                        // 1秒ごとに実行
+                        timeoutId = setInterval(countdown, 1000);
                         hashkey = data.sharekey;
                         // truncatedKey = hashkey.substring(0, 3) + '***********************************************************************************************' + hashkey.slice(-4);
                         $('#share-key').text(hashkey);
@@ -53,6 +70,25 @@
                     // var truncatedKey = updatehashkey.substring(0, 3) + '***********************************************************************************************' + updatehashkey.slice(-4);
 
                     $('#share-key').text(updatehashkey);
+                    let count = data.interval;
+                    let timeoutId = null;
+
+                    function countdown() {
+                        document.getElementById('progress1').value = count;
+                        // document.getElementById('output1').value = count + 'sec';
+        
+                        if (count <= 0) {
+                            clearTimeout(timeoutId);
+                        }
+        
+                        count--;
+                    }
+
+                    // 最初に一度実行
+                    countdown();
+
+                    // 1秒ごとに実行
+                    timeoutId = setInterval(countdown, 1000);
                 });
 
                 socket.on('messages2', function(message) {
@@ -111,6 +147,8 @@
             <h2 class="section-title">Chat Room : {{ room }}</h2>
             <div id="messages2"></div>
             <div id="share-key" class="share-key"></div>
+            <progress id="progress1" value="0" max="20"></progress>
+            <output id="output1"></output> 
             <!-- <div class="sharekey-button">
                 <button onclick="toggleKey()">View Key</button>
             </div> -->
