@@ -21,7 +21,7 @@ client_rooms = {}
 current_sender_key = ''
 current_receiver_key = ''
 
-len_key = 24
+len_key = 40
 num_qubits = 24
 interval = 20 
 
