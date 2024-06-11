@@ -22,8 +22,7 @@ current_sender_key = ''
 current_receiver_key = ''
 
 len_key = 40
-num_qubits = 24
-interval = 20 
+interval = 600 
 
 class User:
     def __init__(self, username: str, sharekey, socket_classical, socket_quantum):

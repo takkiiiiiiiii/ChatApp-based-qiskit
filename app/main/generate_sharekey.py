@@ -3,7 +3,7 @@ import threading
 from threading import Thread
 import time
 
-num_qubit = 22
+num_qubit = 127
 
 class Generate_Key(Thread):
     def __init__(self, user0, user1, key_len):
