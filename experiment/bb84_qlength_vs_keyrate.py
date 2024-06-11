@@ -7,8 +7,8 @@ import time
 
 count = 100
 ave_time = 0
-len_key = 1024
-num_qubit_linux = 18 # for Linux
+len_key = 1000
+num_qubit_linux = 20 # for Linux
 num_qubit_mac = 24 # for mac
 backend = Aer.get_backend('qasm_simulator')
 
@@ -257,11 +257,14 @@ def intercept_resend(qc,e):
 def main():
     total_runtime = 0
     total_keylength = 0
-    for i in range(100):
+    keyrate = 0
+    for i in range(count):
         runtime, key_length = bb84(user0, user1, num_qubit_linux, len_key)
         total_runtime += runtime
         total_keylength += key_length
-    print(f'Average key length generated in 1 sec for 100 runs; {total_keylength / total_runtime}\n\n')
+        keyrate += key_length / runtime
+    
+    print(f'Key Rate ({count} averate); {keyrate / count}\n\n')
 
 if __name__ == '__main__':
     main()
