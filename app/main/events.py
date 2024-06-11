@@ -5,7 +5,6 @@ import time
 from flask import session, request
 from flask_socketio import emit, join_room, leave_room
 from .. import socketio
-# import threading
 from app.main.qkd import bb84
 from app.main.generate_sharekey import Generate_Key, Generate_Key_Join
 import random
@@ -49,24 +48,12 @@ def update_key():
     key_generator.start()   
     while True:
         time.sleep(interval)
-        # with key_lock:
-        # update_key = ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20))
         current_sender_key = key_generator.sender_key
         print(f'Current Key: {current_sender_key}')
         current_receiver_key = key_generator.receiver_key
         hash_key_for_user0 = hashlib.sha256(current_sender_key.encode())
         hash_key_for_user1 = hashlib.sha256(current_receiver_key.encode())
         socketio.emit('update_key', {'updatekey': hash_key_for_user0.hexdigest(), "interval": interval}, namespace='/chat')
-        # socketio.emit('update_key', {'updatekey': update_key}, namespace='/chat')
-
-
-# def update_key():
-#     while True:
-#         # 10秒ごとに更新されたデータを送信
-#         update_key = ''.join(random.choices('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=20))
-#         # print(update_key)
-#         socketio.emit('update_key', {'updatekey': update_key}, namespace='/chat')
-#         time.sleep(1)
 
 
 @socketio.on('joined', namespace='/chat')
@@ -93,7 +80,6 @@ def joined(message):
         sender_hash_key = hashlib.sha256(current_receiver_key.encode())
         receiver_hash_key = hashlib.sha256(current_receiver_key.encode())
         emit('status', {'msg': session.get('name') + ' has entered the room.', 'room_user_count' : room_user_count, 'sharekey' : sender_hash_key.hexdigest(), "interval": interval}, room=room)
-        # emit('status', {'msg': session.get('name') + ' has entered the room.', 'room_user_count' : room_user_count}, room=room)
 
         socketio.start_background_task(update_key)
         return
@@ -134,9 +120,7 @@ def text(message):
     user0.sharekey = current_sender_key
     user1.sharekey = current_receiver_key
     print(f'Plaintext: {plaintext}')
-
     
-    # emit('message', {'msg': session.get('name') + ':' + plaintext, 'sender' : session.get('name'), 'updatekey' : hash_key_for_user0.hexdigest(), 'usernames' : usernames}, room=room)
     emit('message', {'msg': session.get('name') + ':' + plaintext, 'sender' : session.get('name'), 'usernames' : usernames}, namespace='/chat', room=room)
 
 
