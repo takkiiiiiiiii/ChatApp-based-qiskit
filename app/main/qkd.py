@@ -1,18 +1,17 @@
 # ==================================================================================== #
 
-from sys import argv, exit
 from qiskit import QuantumCircuit, Aer, execute
 from qiskit_aer.noise import (NoiseModel, QuantumError, pauli_error, depolarizing_error)
 from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit.compiler import transpile
-from random import seed, sample
+from app.main.kr_Hamming import key_reconciliation_Hamming
 from IPython.display import display
 import json
 
-# backend = Aer.get_backend('qasm_simulator')
+backend = Aer.get_backend('qasm_simulator')
 
-service = QiskitRuntimeService(channel="ibm_quantum", token="My_Token")
-backend = service.get_backend('ibm_kyoto')
+# service = QiskitRuntimeService(channel="ibm_quantum", token="My_Token")
+# backend = service.get_backend('ibm_kyoto')
 
 
 def bb84(user0, user1, num_qubits):
@@ -90,10 +89,12 @@ def bb84(user0, user1, num_qubits):
 # From here, it is a process of key reconciliation, but this approach will be implemented later.
 # For the time being, currently, the shifted keys are compared with each other in a single function to generate a share key. (Only eliminating error bit positions in the comparison).
 
-    for i in range(len(ka)):
-        if ka[i] == kb[i]:
-            alice_sharekey += ka[i]
-            bob_sharekey += kb[i]
+    # for i in range(len(ka)):
+    #     if ka[i] == kb[i]:
+    #         alice_sharekey += ka[i]
+    #         bob_sharekey += kb[i]
+
+
 
 
     sender_classical_channel.close()
@@ -109,11 +110,11 @@ def qrng(n):
         qc.h(i) # The Hadamard gate has the effect of projecting a qubit to a 0 or 1 state with equal probability.
     # measure qubits 0, 1 & 2 to classical bits 0, 1 & 2 respectively
     qc.measure(list(range(n)),list(range(n)))
-    compiled_circuit = transpile(qc, backend)
-    result = backend.run(compiled_circuit, shots=1).result()
+    # compiled_circuit = transpile(qc, backend)
+    # result = backend.run(compiled_circuit, shots=1).result()
     # shot - Number of repetitions of each circuit for sampling
     # Return the results of the job.
-    # result = execute(qc,backend,shots=1).result() 
+    result = execute(qc,backend,shots=1).result() 
     bits = list(result.get_counts().keys())[0]
     print("bits ", bits) 
     bits = ''.join(list(reversed(bits)))
@@ -154,10 +155,9 @@ def bob_measurement(qc,b, noise_model):
             qc.h(i)
 
     qc.measure(list(range(l)),list(range(l))) 
-    compiled_circuit = transpile(qc, backend)
-    result = backend.run(compiled_circuit, shots=1, noise_model=noise_model).result()
-    # result = execute(qc,backend,shots=1, noise_model=noise_model).result() 
-    # result = execute(qc,backend,shots=1).result() 
+    # compiled_circuit = transpile(qc, backend)
+    # result = backend.run(compiled_circuit, shots=1, noise_model=noise_model).result()
+    result = execute(qc,backend,shots=1, noise_model=noise_model).result() 
 
     bits = list(result.get_counts().keys())[0]
     bits = ''.join(list(reversed(bits)))

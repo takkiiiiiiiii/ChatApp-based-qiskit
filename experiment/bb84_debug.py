@@ -1,5 +1,6 @@
 from qiskit import QuantumCircuit, Aer, execute
 from qiskit_aer.noise import (NoiseModel, QuantumError, pauli_error, depolarizing_error)
+from app.main.qkd import key_reconciliation_Hamming
 from IPython.display import display
 from qiskit.tools.visualization import plot_histogram
 
@@ -8,7 +9,8 @@ from qiskit.tools.visualization import plot_histogram
 count = 100
 total = 0
 ave_err_num = 0
-num_qubits_linux = 4 # for Linux
+sifted_key_length = 10000
+num_qubits_linux = 12 # for Linux
 num_qubits_mac = 24 # for mac
 backend = Aer.get_backend('qasm_simulator')
 
@@ -30,6 +32,106 @@ class User:
 
 user0 = User("Alice", any, any, any) 
 user1 = User("Bob", any, any, any)
+
+
+def bb84(user0, user1, num_qubits):
+    alice_bits = qrng(num_qubits)
+    alice_basis = qrng(num_qubits)
+    bob_basis = qrng(num_qubits)
+    eve_basis = qrng(num_qubits)
+
+    # Alice generates qubits 
+    qc = compose_quantum_circuit(num_qubits, alice_bits, alice_basis)
+
+    # Eve eavesdrops Alice's qubits
+    # qc, eve_bits = intercept_resend(qc, eve_basis)
+
+    # Comparison their basis between Alice and Eve
+    ae_basis, ae_match = check_bases(alice_basis, eve_basis)
+    # Comparison their bits between Alice and Eve
+    # ae_bits = check_bits(alice_bits,eve_bits,ae_basis)
+
+    # Apply the quantum error channel
+    noise_model = apply_noise_model()
+
+    # Bob measure Alice's qubit
+    qc, bob_bits = bob_measurement(qc,bob_basis, noise_model)
+
+    # eb_basis, eb_matches = check_bases(eve_basis,bob_basis)
+    # eb_bits = check_bits(eve_bits,bob_bits,eb_basis)
+
+    altered_qubits = 0
+
+    user0.create_socket_for_classical()
+    user1.create_socket_for_classical()
+    sender_classical_channel = user0.socket_classical
+    receiver_classical_channel = user1.socket_classical
+
+    # Alice sifted key
+    ka=''
+    # Bob sifted key
+    kb=''
+    # Eve sifted key
+    ke=''
+
+    # Alice sharekey
+    alice_sharekey = ''
+    # Bob sharekey
+    bob_sharekey = ''
+
+    # アリスとボブ間で基底は一致のはずだが、ビット値が異なる(ノイズや盗聴者によるエラー)数
+    err_num = 0
+
+    # Announce bob's basis
+    receiver_classical_channel.send(bob_basis.encode('utf-8'))
+    bob_basis = sender_classical_channel.recv(4096).decode('utf-8')
+    # Alice's side
+    ab_basis, ab_matches = check_bases(alice_basis,bob_basis)
+    ab_bits = check_bits(alice_bits, bob_bits, ab_basis)
+
+    for i in range(num_qubits):
+        if ae_basis[i] != 'Y' and ab_basis[i] == 'Y': # アリスとイヴ間で基底は異なる(量子ビットの状態が変わる)、アリスとボブ間では一致
+            altered_qubits += 1
+        if ab_basis[i] == 'Y': # アリスとボブ間で基底が一致
+            ka += alice_bits[i] 
+            kb += bob_bits[i]
+        # if ae_basis[i] == 'Y': # アリスとイヴ間で基底が一致
+        #     ke += eve_bits[i]
+        if ab_bits[i] == '!': # アリスとボブ間で基底は一致のはずだが、ビット値が異なる (イヴもしくはノイズによって、量子ビットの状態が変化)
+            err_num += 1
+    err_str = ''.join(['!' if ka[i] != kb[i] else ' ' for i in range(len(ka))])
+
+    # print("Alice's remaining bits:                    " + ka)
+    # print("Error positions (by Eve and noise):        " + err_str)
+    # print("Bob's remaining bits:                      " + kb)
+
+# Final key agreement process
+# From here, it is a process of key reconciliation, but this approach will be implemented later.
+# For the time being, currently, the shifted keys are compared with each other in a single function to generate a share key. (Only eliminating error bit positions in the comparison).
+
+    sender_classical_channel.close()
+    receiver_classical_channel.close()
+        
+    return alice_sharekey, bob_sharekey
+
+
+
+def qrng(n):
+    # generate n-bit string from measurement on n qubits using QuantumCircuit
+    qc = QuantumCircuit(n,n)
+    for i in range(n):
+        qc.h(i) # The Hadamard gate has the effect of projecting a qubit to a 0 or 1 state with equal probability.
+    qc.measure(list(range(n)),list(range(n)))
+    # compiled_circuit = transpile(qc, backend)
+    # result = backend.run(compiled_circuit, shots=1).result()
+    # shot - Number of repetitions of each circuit for sampling
+    # Return the results of the job.
+    result = execute(qc,backend,shots=1).result() 
+    bits = list(result.get_counts().keys())[0]
+    print("bits ", bits) 
+    bits = ''.join(list(reversed(bits)))
+    return bits
+
 
 # qubit encodings in specified bases
 def encode_qubits(n,k,a):
@@ -118,38 +220,18 @@ def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
             kb += bob_bits[i]
     return ka, kb
 
-alice_bits = '0000'
 
-# Alice and Bob have same basis
-alice_basis = '0000'
-bob_basis = '0000'
-
-qc = compose_quantum_circuit(num_qubits_linux, alice_bits, alice_basis)
-
-noise_model = apply_noise_model()
-
-l = len(bob_basis)
-for i in range(l): 
-    if bob_basis[i] == '1': # In case of Diagonal basis
-        qc.h(i)
-
-qc.measure(list(range(l)),list(range(l))) 
-result = execute(qc,backend,shots=10, noise_model=noise_model).result() 
-counts = result.get_counts(0)
-
-max_key = max(counts, key=counts.get)
-bits = ''.join(list(reversed(max_key)))
-print("Bob's bits " + bits)
-plot_histogram(counts)
+# execute 1000 times
+def main():
+    ka = ''
+    kb = ''
+    while(len(ka) > sifted_key_length):
+        part_ka, part_kb = bb84(user0, user1, num_qubits_linux)
+        ka += part_ka
+        kb += part_kb
+    reconciled_key = key_reconciliation_Hamming(ka, kb)
+    print(f'Reconciled key : {reconciled_key}')
 
 
-# user0.create_socket_for_classical()
-# user1.create_socket_for_classical()
-# sender_classical_channel = user0.socket_classical
-# receiver_classical_channel = user1.socket_classical
-
-
-# Alice and Bob shifted key
-# ka = ''
-# kb = ''
-
+if __name__ == '__main__':
+    main()
