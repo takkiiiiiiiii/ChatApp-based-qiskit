@@ -1,15 +1,17 @@
 from qiskit import QuantumCircuit, Aer, execute
 from qiskit_aer.noise import (NoiseModel, QuantumError, pauli_error, depolarizing_error)
-from app.main.qkd import key_reconciliation_Hamming
+from kr_Hamming import key_reconciliation_Hamming
 from IPython.display import display
 from qiskit.tools.visualization import plot_histogram
+import numpy as np
+
 
 
 
 count = 100
 total = 0
 ave_err_num = 0
-sifted_key_length = 10000
+sifted_key_length = 14
 num_qubits_linux = 12 # for Linux
 num_qubits_mac = 24 # for mac
 backend = Aer.get_backend('qasm_simulator')
@@ -112,7 +114,7 @@ def bb84(user0, user1, num_qubits):
     sender_classical_channel.close()
     receiver_classical_channel.close()
         
-    return alice_sharekey, bob_sharekey
+    return ka, kb
 
 
 
@@ -128,7 +130,6 @@ def qrng(n):
     # Return the results of the job.
     result = execute(qc,backend,shots=1).result() 
     bits = list(result.get_counts().keys())[0]
-    print("bits ", bits) 
     bits = ''.join(list(reversed(bits)))
     return bits
 
@@ -159,7 +160,7 @@ def compose_quantum_circuit(n, alice_bits, a) -> QuantumCircuit:
 
 
 def apply_noise_model():
-    p_meas = 0.1
+    p_meas = 0
     error_meas = pauli_error([('X', p_meas), ('I', 1 - p_meas)])
     noise_model = NoiseModel()
     noise_model.add_all_qubit_quantum_error(error_meas, "measure")
@@ -178,7 +179,6 @@ def bob_measurement(qc,bob_basis,noise_model):
     counts = result.get_counts(0)
     max_key = max(counts, key=counts.get)
     bits = ''.join(list(reversed(max_key)))
-    print("Bob bits: " + bits)
 
     qc.barrier() 
     return [qc,bits]
@@ -225,12 +225,29 @@ def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
 def main():
     ka = ''
     kb = ''
-    while(len(ka) > sifted_key_length):
+    while(True):
         part_ka, part_kb = bb84(user0, user1, num_qubits_linux)
         ka += part_ka
         kb += part_kb
-    reconciled_key = key_reconciliation_Hamming(ka, kb)
+        if(len(ka) > sifted_key_length):
+            mod = len(ka) % 7
+            ka = ka[:len(ka)-mod]
+            kb = kb[:len(kb)-mod] 
+            break
+    ka_array = np.array([int(char) for char in ka])
+    kb_array = np.array([int(char) for char in kb])
+
+    reconciled_key_array = key_reconciliation_Hamming(ka_array, ka_array)
+    print(reconciled_key_array)
+    reconciled_key = ''.join(map(str, map(int, reconciled_key_array)))
+
+    # reconciled_key = reconciled_key.replace('.', "")
     print(f'Reconciled key : {reconciled_key}')
+    print(f'Length of reconciled key: {len(reconciled_key)}')
+    # ka = ''.join(map(str, ka_array))
+    # print(ka) 
+
+
 
 
 if __name__ == '__main__':
