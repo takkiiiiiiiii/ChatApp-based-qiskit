@@ -32,8 +32,8 @@ class User:
         client_socket_classical.connect((SERVER_HOST_CLASSICAL, SERVER_PORT_CLASSICAL))
         self.socket_classical = client_socket_classical        
 
-user0 = User("Alice", any, any, any) 
-user1 = User("Bob", any, any, any)
+user0 = User("Alice", None, None, None) 
+user1 = User("Bob", None, None, None)
 
 
 def bb84(user0, user1, num_qubits):
