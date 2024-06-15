@@ -28,8 +28,11 @@ def key_reconciliation_Hamming(ka, kb):
         ka (numpy array): Alice's sifted key
         kb (numpy array): Bob's sifted key
     """
-    length_A = len(ka)
-    length_B = len(kb)
+    ka_array = np.array([int(char) for char in ka])
+    kb_array = np.array([int(char) for char in kb])
+
+    length_A = len(ka_array)
+    length_B = len(kb_array)
     print(length_A)
 
     reconciled_key = np.array([])
@@ -42,23 +45,11 @@ def key_reconciliation_Hamming(ka, kb):
     print(n_blocks)
 
     for idx in range(n_blocks):
-        block_A = ka[(idx)*7:(idx+1)*7]
-        block_B = kb[(idx)*7:(idx+1)*7]
+        block_A = ka_array[(idx)*7:(idx+1)*7]
+        block_B = kb_array[(idx)*7:(idx+1)*7]
         if (Hamming_kr_one_block(block_A, block_B)):
             reconciled_key = np.append(reconciled_key, block_A)
             print(len(reconciled_key))
     print(reconciled_key)
     return reconciled_key
 
-
-if __name__ == '__main__':
-    size = 1001
-    error_rate = 0.1
-
-    ka = np.random.randint(2, size=size)
-    noise = np.random.choice([0, 1], size=size, p=[1-error_rate, error_rate])
-    kb = (ka + noise) % 2
-
-    reconciled_key = key_reconciliation_Hamming(ka, kb)
-    print(len(reconciled_key))
-    print(reconciled_key)

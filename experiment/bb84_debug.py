@@ -234,10 +234,8 @@ def main():
             ka = ka[:len(ka)-mod]
             kb = kb[:len(kb)-mod] 
             break
-    ka_array = np.array([int(char) for char in ka])
-    kb_array = np.array([int(char) for char in kb])
 
-    reconciled_key_array = key_reconciliation_Hamming(ka_array, ka_array)
+    reconciled_key_array = key_reconciliation_Hamming(ka, kb)
     print(reconciled_key_array)
     reconciled_key = ''.join(map(str, map(int, reconciled_key_array)))
 
