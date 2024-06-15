@@ -9,9 +9,7 @@ import numpy as np
 
 
 count = 100
-total = 0
-ave_err_num = 0
-sifted_key_length = 14
+sifted_key_length = 10003
 num_qubits_linux = 12 # for Linux
 num_qubits_mac = 24 # for mac
 backend = Aer.get_backend('qasm_simulator')
@@ -36,7 +34,7 @@ user0 = User("Alice", None, None, None)
 user1 = User("Bob", None, None, None)
 
 
-def bb84(user0, user1, num_qubits):
+def generate_Siftedkey(user0, user1, num_qubits):
     alice_bits = qrng(num_qubits)
     alice_basis = qrng(num_qubits)
     bob_basis = qrng(num_qubits)
@@ -154,13 +152,12 @@ def encode_qubits(n,k,a):
 
 def compose_quantum_circuit(n, alice_bits, a) -> QuantumCircuit:
     qc = QuantumCircuit(n,n)
-    qc.measure_all()
     qc.compose(encode_qubits(n, alice_bits, a), inplace=True)
     return qc
 
 
 def apply_noise_model():
-    p_meas = 0
+    p_meas = 0.1
     error_meas = pauli_error([('X', p_meas), ('I', 1 - p_meas)])
     noise_model = NoiseModel()
     noise_model.add_all_qubit_quantum_error(error_meas, "measure")
@@ -226,7 +223,7 @@ def main():
     ka = ''
     kb = ''
     while(True):
-        part_ka, part_kb = bb84(user0, user1, num_qubits_linux)
+        part_ka, part_kb = generate_Siftedkey(user0, user1, num_qubits_linux)
         ka += part_ka
         kb += part_kb
         if(len(ka) > sifted_key_length):
@@ -236,16 +233,11 @@ def main():
             break
 
     reconciled_key_array = key_reconciliation_Hamming(ka, kb)
-    print(reconciled_key_array)
     reconciled_key = ''.join(map(str, map(int, reconciled_key_array)))
 
     # reconciled_key = reconciled_key.replace('.', "")
     print(f'Reconciled key : {reconciled_key}')
     print(f'Length of reconciled key: {len(reconciled_key)}')
-    # ka = ''.join(map(str, ka_array))
-    # print(ka) 
-
-
 
 
 if __name__ == '__main__':

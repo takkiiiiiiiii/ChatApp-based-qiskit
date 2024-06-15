@@ -42,14 +42,11 @@ def key_reconciliation_Hamming(ka, kb):
 
     # Number of blocks
     n_blocks = int(length_A/7)
-    print(n_blocks)
 
     for idx in range(n_blocks):
         block_A = ka_array[(idx)*7:(idx+1)*7]
         block_B = kb_array[(idx)*7:(idx+1)*7]
         if (Hamming_kr_one_block(block_A, block_B)):
             reconciled_key = np.append(reconciled_key, block_A)
-            print(len(reconciled_key))
-    print(reconciled_key)
     return reconciled_key
 
