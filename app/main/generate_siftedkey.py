@@ -14,7 +14,7 @@ backend = Aer.get_backend('qasm_simulator')
 # backend = service.get_backend('ibm_kyoto')
 
 
-def bb84(user0, user1, num_qubits):
+def Generate_Siftedkey(user0, user1, num_qubits):
     alice_bits = qrng(num_qubits)
     alice_basis = qrng(num_qubits)
     bob_basis = qrng(num_qubits)
@@ -89,18 +89,11 @@ def bb84(user0, user1, num_qubits):
 # From here, it is a process of key reconciliation, but this approach will be implemented later.
 # For the time being, currently, the shifted keys are compared with each other in a single function to generate a share key. (Only eliminating error bit positions in the comparison).
 
-    # for i in range(len(ka)):
-    #     if ka[i] == kb[i]:
-    #         alice_sharekey += ka[i]
-    #         bob_sharekey += kb[i]
-
-
-
 
     sender_classical_channel.close()
     receiver_classical_channel.close()
         
-    return alice_sharekey, bob_sharekey
+    return ka, kb
 
 
 def qrng(n):
@@ -116,7 +109,6 @@ def qrng(n):
     # Return the results of the job.
     result = execute(qc,backend,shots=1).result() 
     bits = list(result.get_counts().keys())[0]
-    print("bits ", bits) 
     bits = ''.join(list(reversed(bits)))
     return bits
 
@@ -197,7 +189,6 @@ def check_bits(b1,b2,bck):
 
 def compose_quantum_circuit(n, alice_bits, a) -> QuantumCircuit:
     qc = QuantumCircuit(n,n)
-    qc.measure_all()
     qc.compose(encode_qubits(n, alice_bits, a), inplace=True)
     return qc
 

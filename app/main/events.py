@@ -5,7 +5,6 @@ import time
 from flask import session, request
 from flask_socketio import emit, join_room, leave_room
 from .. import socketio
-from app.main.qkd import bb84
 from app.main.generate_sharekey import Generate_Key, Generate_Key_Join
 import random
 
@@ -20,8 +19,9 @@ client_rooms = {}
 current_sender_key = ''
 current_receiver_key = ''
 
-len_key = 40
-interval = 600 
+len_key = 1008
+interval = 90
+
 
 class User:
     def __init__(self, username: str, sharekey, socket_classical, socket_quantum):
@@ -66,16 +66,17 @@ def joined(message):
     room = session.get('room')
     username = session.get('name')
     join_room(room)
-    print("aaaa")
     if username not in room_users:
-        u = User(username, any, any, any)
+        u = User(username, None, None, None)
         users.append(u)
         room_users.append(username)
         room_user_count += 1
     
     if room_user_count == 2:
         key_generator = Generate_Key_Join(users[0], users[1], len_key)
-        current_sender_key, current_receiver_key = key_generator.gen_key_joined()
+        reconciled_key = key_generator.gen_key_joined()
+        current_sender_key = reconciled_key
+        current_receiver_key = reconciled_key
         print(f'First current_sender_key : {current_sender_key}')
         sender_hash_key = hashlib.sha256(current_receiver_key.encode())
         receiver_hash_key = hashlib.sha256(current_receiver_key.encode())
