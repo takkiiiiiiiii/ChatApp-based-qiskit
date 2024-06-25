@@ -17,10 +17,10 @@ plt.ylim(0, 0.2)
 plt.yticks(np.arange(0, 0.2, 0.01))
 plt.xticks(np.arange(0, 16.5, 1))
 
-plt.xlabel(r'Number of Generated Qubit')
+plt.xlabel(r'Generated Qubits from IBM Platform per a execution')
 plt.ylabel(r'Runtime(s)')
 plt.grid(alpha=0.3)
 
-plt.savefig('qlength_vs_keyrate2.png', format='png', bbox_inches="tight", dpi=300)
+plt.savefig('qlength_vs_runtimne2.png', format='png', bbox_inches="tight", dpi=300)
 
 plt.show()
