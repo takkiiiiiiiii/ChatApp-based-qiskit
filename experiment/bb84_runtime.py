@@ -6,10 +6,9 @@ from kr_Hamming import key_reconciliation_Hamming
 import time
 
 
-count = 10
 ave_time = 0
-len_key = 1000
-# num_qubit_linux = 1 # for Linux
+len_key = 1024
+num_qubit_linux = 16 # for Linux
 num_qubit_mac = 24 # for mac
 backend = Aer.get_backend('qasm_simulator')
 
@@ -33,7 +32,7 @@ user0 = User("Alice", any, any, any)
 user1 = User("Bob", any, any, any)
 
 def bb84(user0, user1, num_qubits):
-    start = time.time()
+    # start = time.time()
     alice_bits = qrng(num_qubits)
     alice_basis = qrng(num_qubits)
     bob_basis = qrng(num_qubits)
@@ -117,9 +116,10 @@ def bb84(user0, user1, num_qubits):
     # print("Alice's sharekey ", alice_sharekey)
     # print("Bob's sharekey ", bob_sharekey)
 
-    end = time.time()
-    runtime = end - start
-    return runtime, len(alice_sharekey)
+    # end = time.time()
+    # runtime = end - start
+
+    return len(alice_sharekey)
 
 
 def qrng(n):
@@ -206,7 +206,6 @@ def check_bits(b1,b2,bck):
 
 def compose_quantum_circuit(n, alice_bits, a) -> QuantumCircuit:
     qc = QuantumCircuit(n,n)
-    qc.measure_all()
     qc.compose(encode_qubits(n, alice_bits, a), inplace=True)
     return qc
 
@@ -252,59 +251,57 @@ def intercept_resend(qc,e):
     qc.barrier()
     return [qc,bits]
 
-# sifted_key_length = 1001
 
-# def gen_key():
-#     start = time.time()
-#     ka = ''
-#     kb = ''
-#     while (True):
-#         part_ka, part_kb = bb84(user0, user1, num_qubit_linux)
-#         ka += part_ka
-#         kb += part_kb
-#         # key reconciliation
-#         if(len(ka) > sifted_key_length):
-#             mod = len(ka) % 7
-#             ka = ka[:len(ka)-mod]
-#             kb = kb[:len(kb)-mod] 
-#             break
+sifted_key_length = 1001
 
-#     reconciled_key_array = key_reconciliation_Hamming(ka, kb)
-#     reconciled_key = ''.join(map(str, map(int, reconciled_key_array)))
-#     end = time.time()
-#     runtime = end-start
-#     return runtime, len(reconciled_key)
+def gen_key():
+    start = time.time()
+    ka = ''
+    kb = ''
+    while (True):
+        part_ka, part_kb = bb84(user0, user1, num_qubit_linux)
+        ka += part_ka
+        kb += part_kb
+        # key reconciliation
+        if(len(ka) > sifted_key_length):
+            mod = len(ka) % 7
+            ka = ka[:len(ka)-mod]
+            kb = kb[:len(kb)-mod] 
+            break
+
+    reconciled_key_array = key_reconciliation_Hamming(ka, kb)
+    reconciled_key = ''.join(map(str, map(int, reconciled_key_array)))
+    end = time.time()
+    runtime = end-start
+    return runtime
 
 
-# # execute 1000 times
-# def main():
-#     total_runtime = 0
-#     total_keylength = 0
-#     keyrate = 0
-#     for i in range(count):
-#         runtime, key_length = gen_key()
-#         total_runtime += runtime
-#         total_keylength += key_length
-#         keyrate += key_length / runtime
-    
-#     print(f'Key Rate ({count} average); {keyrate / count}\n\n')
-
-num_qubit_linux = 24 # for Linux
 
 # execute 1000 times
+# def main():
+#     runtime = 0
+#     total_runtime = 0
+#     for i in range(count):
+#         runtime = gen_key()
+#         total_runtime += runtime
+#     print(f'Average runtime to generate the sharekey ({count} times); {total_runtime/count}\n\n')
+
+count = 1000
+siftedkeylength = 1000
 def main():
     total_runtime = 0
-    total_keylength = 0
-    keyrate = 0
-    for i in range(count):
-        runtime, key_length = bb84(user0, user1, num_qubit_linux)
-        total_runtime += runtime
-        total_keylength += key_length
-        keyrate += key_length / runtime
-    
-    print(f'Runtime ({count} average); {total_runtime / count}\n\n')
-    print(f'Key length ({count} average); {total_keylength / count}\n\n')
-    print(f'Key Rate ({count} average); {keyrate / count}\n\n')
+    total_siftedkeylength = 0
+    for i in range(3):
+        start = time.time()
+        while(True):
+            len_key = bb84(user0, user1, num_qubit_linux)
+            total_siftedkeylength += len_key
+            if(total_siftedkeylength > siftedkeylength):
+                end = time.time()
+                runtime = end - start
+                total_runtime += runtime
+                break
+    print(f'Runtime to generate sifted key: {total_runtime/count}')
 
 if __name__ == '__main__':
     main()

@@ -8,7 +8,7 @@ from IPython.display import display
 count = 100
 total = 0
 len_key = 2048
-num_qubit_linux = 22 # for Linux
+num_qubit_linux = 12 # for Linux
 num_qubit_mac = 24 # for mac
 backend = Aer.get_backend('qasm_simulator')
 
