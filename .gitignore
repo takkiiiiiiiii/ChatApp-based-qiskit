@@ -1,3 +1,4 @@
 app/__pycache__/*.pyc
 app/main/__pycache__/*.pyc
 experiment/*ipynb
+experiment/__pycache__/*pyc
