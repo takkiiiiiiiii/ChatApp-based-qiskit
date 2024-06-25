@@ -17,8 +17,8 @@ plt.ylim(0, 165)
 plt.yticks(np.arange(0, 165, 10))
 plt.xticks(np.arange(0, 24.5, 1))
 
-plt.xlabel(r'Number of Generated Qubit')
-plt.ylabel(r'Key rate(bps)')
+plt.xlabel(r'Generated Qubits from IBM Platform per a execution')
+plt.ylabel(r'Sifted Key rate(bps)')
 plt.grid(alpha=0.3)
 
 plt.savefig('qlength_vs_keyrate.png', format='png', bbox_inches="tight", dpi=300)

@@ -15,7 +15,7 @@ plt.xticks(np.arange(0, 100, 5))
 plt.yticks(np.arange(0, 12, 1))
 
 plt.xlabel(r'Probability of error')
-plt.ylabel(r'Key_length')
+plt.ylabel(r'Sifted_Key_length')
 plt.grid(alpha=0.3)
 
 plt.title('Probability of error vs Key length (Generated Qubits = 22)')
