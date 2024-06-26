@@ -12,7 +12,7 @@ plt.xlabel('Error Rate of sifted key')
 plt.ylabel('Frequency')
 
 # グラフのタイトルを設定
-plt.title('Error Rate of sifted key vs  Frequency of Error Rate')
+plt.title('Error Rate of sifted key vs  Frequency of Error Rate (1000 times)')
 
 # x軸の範囲を設定
 plt.xlim(22, 28)
