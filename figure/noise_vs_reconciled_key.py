@@ -14,7 +14,7 @@ plt.xlim(1, 100)
 plt.ylim(0, 170)
 
 plt.yticks(np.arange(0, 170, 10))
-plt.xticks(np.arange(1, 100, 10))
+plt.xticks(np.arange(0, 100, 10))
 
 plt.xlabel(r'Probability of error')
 plt.ylabel(r'Reconcilied Key Rate')
