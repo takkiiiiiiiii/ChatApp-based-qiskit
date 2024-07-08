@@ -158,7 +158,7 @@ def compose_quantum_circuit(n, alice_bits, a) -> QuantumCircuit:
 
 
 def apply_noise_model():
-    p_meas = 0.01
+    p_meas = 0.15
     error_meas = pauli_error([('X', p_meas), ('I', 1 - p_meas)])
     noise_model = NoiseModel()
     noise_model.add_all_qubit_quantum_error(error_meas, "measure")

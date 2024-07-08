@@ -12,7 +12,7 @@ import random
 
 count = 100
 sifted_key_length = 1001
-num_qubits_linux = 10 # for Linux
+num_qubits_linux = 12 # for Linux
 num_qubits_mac = 24 # for mac
 backend = Aer.get_backend('qasm_simulator')
 
@@ -38,9 +38,9 @@ user1 = User("Bob", None, None, None)
 
 def generate_Siftedkey(user0, user1, num_qubits):
     alice_bits = qrng(num_qubits)
-    alice_basis = '0000011111'
-    bob_basis = '0000011111'
-    eve_basis = '1111111111'
+    alice_basis = '000000111111'
+    bob_basis = '000000111111'
+    eve_basis = '111111111111'
     # alice_basis = qrng(num_qubits)
     # bob_basis = qrng(num_qubits)
     # eve_basis = qrng(num_qubits)
