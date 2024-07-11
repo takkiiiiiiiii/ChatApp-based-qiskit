@@ -18,11 +18,11 @@ Runtime = np.array([0.02770237684249878, 0.02807220220565796, 0.0287506818771362
 fig, ax1 = plt.subplots(figsize=(10, 6))
 
 color = 'tab:blue'
-ax1.set_xlabel('Generated Qubits from IBM Platform per execution', fontsize=14)
-ax1.set_ylabel('Sifted Key Rate (bps)', color=color, fontsize=14)
+ax1.set_xlabel('Generated Qubits from IBM Platform per execution', fontsize=20)
+ax1.set_ylabel('Sifted Key Rate (bps)', color=color, fontsize=20)
 ax1.plot(qbit, KeyRate, color=color, marker='o', label='Sifted Key Rate (bps)')
-ax1.tick_params(axis='y', labelcolor=color, labelsize=12)
-ax1.tick_params(axis='x', labelsize=12)
+ax1.tick_params(axis='y', labelcolor=color, labelsize=18)
+ax1.tick_params(axis='x', labelsize=18)
 ax1.set_ylim(0, 165)
 ax1.set_xlim(0, 24.5)
 ax1.set_xticks(np.arange(0, 25, 1))
@@ -31,14 +31,14 @@ ax1.grid(alpha=0.3)
 
 ax2 = ax1.twinx()
 color = 'tab:red'
-ax2.set_ylabel('Runtime (s)', color=color, fontsize=14)
+ax2.set_ylabel('Runtime (s)', color=color, fontsize=20)
 ax2.plot(qbit, Runtime, color=color, marker='o', label='Runtime (s)')
-ax2.tick_params(axis='y', labelcolor=color, labelsize=12)
+ax2.tick_params(axis='y', labelcolor=color, labelsize=18)
 ax2.set_ylim(0, 10)
 ax2.set_yticks(np.arange(0, 11, 1))
 ax2.grid(alpha=0.3)
 
-fig.suptitle('Generated Qubits from IBM Platform per Execution vs. Sifted Key Rate and Runtime')
+# fig.suptitle('Generated Qubits from IBM Platform per Execution vs. Sifted Key Rate and Runtime')
 fig.tight_layout(rect=[0, 0.03, 1, 0.95])
 
 plt.savefig('qlength_vs_keyrate_runtime.png', format='png', bbox_inches="tight", dpi=300)
