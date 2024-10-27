@@ -11,10 +11,11 @@ import random
 
 
 count = 100
-sifted_key_length = 20
+sifted_key_length = 1024
 num_qubits_linux = 12 # for Linux
 num_qubits_mac = 24 # for mac
 backend = Aer.get_backend('qasm_simulator')
+intercept_prob = 1.0
 
 
 class User:
@@ -36,20 +37,25 @@ user0 = User("Alice", None, None, None)
 user1 = User("Bob", None, None, None)
 
 
-def generate_Siftedkey(user0, user1, num_qubits):
-    alice_bits = qrng(num_qubits)
-    alice_basis = '000000111111'
-    bob_basis = '000000111111'
-    eve_basis = '111111111111'
-    # alice_basis = qrng(num_qubits)
-    # bob_basis = qrng(num_qubits)
-    # eve_basis = qrng(num_qubits)
 
-    # Alice generates qubits 
+def generate_Siftedkey(user0, user1, num_qubits):
+    # alice_bits = '000000111111'
+    # alice_basis = '000000111111'
+    # bob_basis = '000000111111'
+    # eve_basis = '111111111111' # 長さを事前に決めない(後で削除)
+    alice_bits = qrng(num_qubits)
+    alice_basis = qrng(num_qubits)
+    bob_basis = qrng(num_qubits)
+    eve_basis = qrng(num_qubits)
+
+    # Alice generates qubits
     qc = compose_quantum_circuit(num_qubits, alice_bits, alice_basis)
 
+    # Quantum Circuit for Eve
+    qc2 = compose_quantum_circuit_for_eve(num_qubits, alice_bits, alice_basis)
+
     # Eve eavesdrops Alice's qubits
-    qc, eve_bits = intercept_resend(qc, eve_basis, intercept_prob=1.0)
+    qc, eve_basis, eve_bits = intercept_resend(qc, qc2, eve_basis, intercept_prob)
 
     # Comparison their basis between Alice and Eve
     ae_basis, ae_match = check_bases(alice_basis, eve_basis)
@@ -101,7 +107,7 @@ def generate_Siftedkey(user0, user1, num_qubits):
             ka += alice_bits[i] 
             kb += bob_bits[i]
         # if ae_basis[i] == 'Y': # アリスとイヴ間で基底が一致
-        #     ke += eve_bits[i]
+            # ke += eve_bits[i]
         if ab_bits[i] == '!': # アリスとボブ間で基底は一致のはずだが、ビット値が異なる (イヴもしくはノイズによって、量子ビットの状態が変化)
             err_num += 1
     err_str = ''.join(['!' if ka[i] != kb[i] else ' ' for i in range(len(ka))])
@@ -116,6 +122,7 @@ def generate_Siftedkey(user0, user1, num_qubits):
 
     sender_classical_channel.close()
     receiver_classical_channel.close()
+    # print("eve_basis: ", eve_basis)
         
     return ka, kb
 
@@ -154,11 +161,18 @@ def encode_qubits(n,k,a):
     qc.barrier()
     return qc
 
-
-def compose_quantum_circuit(n, alice_bits, a) -> QuantumCircuit:
-    qc = QuantumCircuit(n,n)
-    qc.compose(encode_qubits(n, alice_bits, a), inplace=True)
+# AliceとBobがビット値を生成するための量子回路
+def compose_quantum_circuit(num_qubit, alice_bits, alice_basis) -> QuantumCircuit:
+    qc = QuantumCircuit(num_qubit, num_qubit)
+    qc.compose(encode_qubits(num_qubit, alice_bits, alice_basis), inplace=True)
     return qc
+
+
+# qcと同じ実装だが、イブのビット値を生成するための量子回路
+def compose_quantum_circuit_for_eve(num_qubit, alice_bits, alice_basis) -> QuantumCircuit:
+    qc2 = QuantumCircuit(num_qubit, num_qubit)
+    qc2.compose(encode_qubits(num_qubit, alice_bits, alice_basis), inplace=True)
+    return qc2
 
 
 # def apply_noise_model():
@@ -182,6 +196,7 @@ def bob_measurement(qc,bob_basis):
     max_key = max(counts, key=counts.get)
     bits = ''.join(list(reversed(max_key)))
 
+    # display(qc.draw())
     qc.barrier() 
     return [qc,bits]
 
@@ -225,88 +240,83 @@ def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
 
 
 # intercept Alice'squbits to measure and resend to Bob
-def intercept_resend(qc,e, intercept_prob):
-    backend = Aer.get_backend('qasm_simulator') 
-    l = len(e)
+def intercept_resend(qc, qc2, eve_basis , intercept_prob):
+    backend = Aer.get_backend('qasm_simulator')
 
-    # num_to_intercept = int(l * intercept_prob)
-    # to_intercept = random.sample(range(l), num_to_intercept)
+    l = len(eve_basis)
+    num_to_intercept = int(num_qubits_mac * intercept_prob)  # イヴが盗聴する光子の数(例：24 * 0.5 = 12)
+    to_intercept = random.sample(range(num_qubits_mac), num_to_intercept)
+    to_intercept = sorted(to_intercept)
     # print(to_intercept)
+    eve_basis = list(eve_basis)
 
-    # if len(to_intercept) < 1:
-    #     return qc, None
+    for i in range(len(eve_basis)):
+        if i not in to_intercept:
+            eve_basis[i] = '!'
 
-    for i in range (l):
-        if e[i] == '1':
+    for i in to_intercept:
+        if eve_basis[i] == '1':
             qc.h(i)
+            qc2.h(i)
 
-    # display(qc.draw())
-    qc.measure(list(range(l)),list(range(l))) 
-    result = execute(qc,backend,shots=1).result() 
+
+    
+    # for i in range(to_intercept):
+    #     if e[i] == '1':
+    #         qc.h()
+
+    
+    qc2.measure(list(range(l)),list(range(l))) 
+    result = execute(qc2,backend,shots=1).result() 
     bits = list(result.get_counts().keys())[0] 
     bits = ''.join(list(reversed(bits)))
 
-    qc.reset(list(range(l)))
+    # qc.reset(list(range(l)))
     
     # イヴの情報を元に、アリスと同じエンコードをして、量子ビットの偏光状態を決める
     for i in range (l):
-        if e[i] == '0':
+        if eve_basis[i] == '0':
             if bits[i] == '1':
                 qc.x(i)
-        else:
+        elif eve_basis[i] == '1':
             if bits[i] == '0':
                 qc.h(i)
             else:
                 qc.x(i)
                 qc.h(i)
     qc.barrier()
-    # display(qc.draw())
-    return [qc,bits]
+
+    return [qc, eve_basis ,bits]
 
 # execute 1000 times
 def main():
     ka = ''
     kb = ''
     error = ''
-    part_ka, part_kb = generate_Siftedkey(user0, user1, num_qubits_linux)
-    for i in range(len(part_kb)):
-        if part_ka[i] != part_kb[i]:
+    num_error = 0
+    while(len(ka) < sifted_key_length):
+        part_ka, part_kb = generate_Siftedkey(user0, user1, num_qubits_mac)
+        ka += part_ka
+        kb += part_kb
+        if len(ka) > sifted_key_length:
+            ka = ka[:sifted_key_length]
+            kb = kb[:sifted_key_length]
+    
+
+    
+    for i in range(len(ka)):
+        if ka[i] != kb[i]:
             error += '!'
+            num_error += 1
         else:
             error += ' '
-    print(part_ka)
-    print(error)
-    print(part_kb)
-    # error_rate = []
-    # for i in range(1):
-    #     correct = 0
-    #     ka = ''
-    #     kb = ''
-    #     start = time.time()
-    #     while(True):
-    #         part_ka, part_kb = generate_Siftedkey(user0, user1, num_qubits_linux)
-    #         ka += part_ka
-    #         kb += part_kb
-            # if(len(ka) > sifted_key_length):
-            #     mod = len(ka) % 7
-            #     ka = ka[:len(ka)-mod]
-            #     kb = kb[:len(kb)-mod]
-            #     break
+    # print(f"Alice sifted key: {ka} ")
+    # print(f"Error position:   {error}")
+    # print(f"Bob sifted key:   {kb} ")
+    print(f"The number of Quantum Bit Error: {num_error}/{sifted_key_length}")
 
-        # reconciled_key_array = key_reconciliation_Hamming(ka, kb)
-        # reconciled_key = ''.join(map(str, map(int, reconciled_key_array)))
-        # end = time.time()
 
-        # for i in range(len(ka)):
-        #     if int(ka[i]) != int(kb[i]):
-        #         correct += 1
-
-        # print(f'Error rate of sifted key: {(correct/len(ka))*100}')
-        # error_rate.append((correct/len(ka))*100)
-        # print(f'Length of reconciled key: {len(reconciled_key)}')
-        # print(f'Runtime: {end - start}')
-        # print(f'Reconciled Key Rate: {len(reconciled_key)/(end-start)}')
-    # print(error_rate)
+    print(f"QBER: ", {num_error/len(ka)*100})
 
 if __name__ == '__main__':
     main()
