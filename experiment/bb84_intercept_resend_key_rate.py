@@ -10,10 +10,10 @@ import random
 
 
 
-count = 100
+count = 2
 sifted_key_length = 1024
 num_qubits_linux = 12 # for Linux
-num_qubits_mac = 19 # for mac
+num_qubits_mac = 20 # for mac
 backend = Aer.get_backend('qasm_simulator')
 intercept_prob = 0
 noise_prob = 0
@@ -119,7 +119,7 @@ def generate_Siftedkey(user0, user1, num_qubits):
     end = time.time()
     runtime = end - start
     
-    return runtime, len(ka)
+    return ka, kb, runtime, len(ka)
 
 
 
@@ -296,20 +296,44 @@ def main():
     total_keylength = 0
     total_keyrate = 0
     keyrate = 0
+    num_error = 0
+    Qber_ratio = 0
+    Qber = 0
     
     for i in range(count):
-        runtime, key_length = generate_Siftedkey(user0, user1, num_qubits_mac)
-        print(f"Key length:{key_length}")
-        print(f"Runtime: {runtime}")
-        print(f"Key rate: {key_length/runtime}")
-        total_runtime += runtime
-        total_keylength += key_length
-        total_keyrate += key_length/runtime
+        ka = ''
+        kb = ''
+        num_error = 0
+        repeat = 0
+        totaltotal_keyrate = 0
+        while(len(ka) < sifted_key_length):
+            repeat += 1
+            part_ka, part_kb, runtime, key_length = generate_Siftedkey(user0, user1, num_qubits_mac)
+            ka += part_ka
+            kb += part_kb
+            # print(f"Key length:{key_length}")
+            # print(f"Runtime: {runtime}")
+            # print(f"Key rate: {key_length/runtime}")
+            # total_runtime += runtime
+            # total_keylength += key_length
+            total_keyrate += key_length/runtime
+            # print(total_keyrate)
+        for j in range(len(ka)):
+            if ka[j] != kb[j]:
+                num_error += 1
+        Qber_ratio += num_error/len(ka)*100
+        Qber += Qber_ratio
+        print(f"QBER: {Qber_ratio}")    
+        # totaltotal_runtime += total_runtime  
+        # totaltotal_keylength += total_keylength
+        totaltotal_keyrate += total_keyrate/repeat
+    
+    print(totaltotal_keyrate)
     
     print(f"Channel Noise Ratio:             {noise_prob*100}%")
     print(f"Intercept-and-resend Ratio:      {intercept_prob*100}%")
-    print(f'Runtime ({count} average); {total_runtime / count}\n\n')
-    print(f'Key Rate ({count} average); {total_keyrate / count}\n\n')
+    print(f'Key Rate ({count} average); {totaltotal_keyrate / count}')
+    print(f"QBER({count} average): ", {Qber/count})
 
 if __name__ == '__main__':
     main()
