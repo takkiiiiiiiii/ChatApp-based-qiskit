@@ -13,9 +13,9 @@ import random
 count = 100
 sifted_key_length = 1024
 num_qubits_linux = 12 # for Linux
-num_qubits_mac = 20 # for mac
+num_qubits_mac = 19 # for mac
 backend = Aer.get_backend('qasm_simulator')
-intercept_prob = 0.2
+intercept_prob = 0
 noise_prob = 0
 
 
@@ -40,6 +40,7 @@ user1 = User("Bob", None, None, None)
 
 
 def generate_Siftedkey(user0, user1, num_qubits):
+    start = time.time()
     alice_bits = qrng(num_qubits)
     alice_basis = qrng(num_qubits)
     bob_basis = qrng(num_qubits)
@@ -114,8 +115,11 @@ def generate_Siftedkey(user0, user1, num_qubits):
     sender_classical_channel.close()
     receiver_classical_channel.close()
     # print("eve_basis: ", eve_basis)
-        
-    return ka, kb
+
+    end = time.time()
+    runtime = end - start
+    
+    return runtime, len(ka)
 
 
 
@@ -288,42 +292,24 @@ def intercept_resend(qc, qc2, eve_basis , intercept_prob):
 
 # execute 1000 times
 def main():
-    repeat = 10
-    Qber = 0
-    total_error = 0
-    for i in range(repeat):
-        ka = ''
-        kb = ''
-        error = ''
-        num_error = 0
-        while(len(ka) < sifted_key_length):
-            part_ka, part_kb = generate_Siftedkey(user0, user1, num_qubits_mac)
-            ka += part_ka
-            kb += part_kb
-            if len(ka) > sifted_key_length:
-                ka = ka[:sifted_key_length]
-                kb = kb[:sifted_key_length]
+    total_runtime = 0
+    total_keylength = 0
+    total_keyrate = 0
+    keyrate = 0
     
-
+    for i in range(count):
+        runtime, key_length = generate_Siftedkey(user0, user1, num_qubits_mac)
+        print(f"Key length:{key_length}")
+        print(f"Runtime: {runtime}")
+        print(f"Key rate: {key_length/runtime}")
+        total_runtime += runtime
+        total_keylength += key_length
+        total_keyrate += key_length/runtime
     
-        for j in range(len(ka)):
-            if ka[j] != kb[j]:
-                error += '!'
-                num_error += 1
-            else:
-                error += ' '
-        total_error += num_error
-        Qber += num_error/len(ka)*100
-        print(f"The number of Quantum Bit Error: {num_error}/{sifted_key_length}")
-        print(f"QBER: ", {num_error/len(ka)*100})
-
     print(f"Channel Noise Ratio:             {noise_prob*100}%")
     print(f"Intercept-and-resend Ratio:      {intercept_prob*100}%")
-    print(f"Average of the number of Quantum Bit Error: {total_error/repeat}/{sifted_key_length}")
-
-
-    print(f"QBER: ", {Qber/repeat})
+    print(f'Runtime ({count} average); {total_runtime / count}\n\n')
+    print(f'Key Rate ({count} average); {total_keyrate / count}\n\n')
 
 if __name__ == '__main__':
     main()
-

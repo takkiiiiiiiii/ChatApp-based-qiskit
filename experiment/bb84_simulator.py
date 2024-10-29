@@ -3,13 +3,14 @@ from qiskit import QuantumCircuit, Aer, execute
 from qiskit_aer.noise import NoiseModel, ReadoutError
 from IPython.display import display
 import time
+import random
 
 
 count = 100
 ave_time = 0
 len_key = 2048
-num_qubit_linux = 20 # for Linux
-num_qubit_mac = 24 # for mac
+num_qubit_linux = 15 # for Linux
+num_qubit_mac = 15 # for mac
 backend = Aer.get_backend('qasm_simulator')
 
 
@@ -42,7 +43,7 @@ def bb84(user0, user1, num_qubits, len_key):
     qc = compose_quantum_circuit(num_qubits, alice_bits, alice_basis)
 
     # Eve intercepts Alice's qubits and resends to Bob
-    # qc, eve_bits = intercept_resend(qc, eve_basis)
+    qc, eve_bits = intercept_resend(qc, eve_basis)
 
     # Comparison their basis between Alice and Eve
     ae_basis, ae_match = check_bases(alice_basis, eve_basis)
@@ -85,20 +86,30 @@ def bb84(user0, user1, num_qubits, len_key):
     ab_bits = check_bits(alice_bits, bob_bits, ab_basis)
 
     for i in range(num_qubits):
-        if ae_basis[i] != 'Y' and ab_basis[i] == 'Y': # アリスとイヴ間で基底は異なる(量子ビットの状態が変わる)、アリスとボブ間では一致
-            altered_qubits += 1
+        # if ae_basis[i] != 'Y' and ab_basis[i] == 'Y': # アリスとイヴ間で基底は異なる(量子ビットの状態が変わる)、アリスとボブ間では一致
+            # altered_qubits += 1
         if ab_basis[i] == 'Y': # アリスとボブ間で基底が一致
             ka += alice_bits[i] 
             kb += bob_bits[i]
         # if ae_basis[i] == 'Y': # アリスとイヴ間で基底が一致
         #     ke += eve_bits[i]
-        if ab_bits[i] == '!': # アリスとボブ間で基底は一致のはずだが、ビット値が異なる (イヴもしくはノイズによって、量子ビットの状態が変化)
-            err_num += 1
+        # if ab_bits[i] == '!': # アリスとボブ間で基底は一致のはずだが、ビット値が異なる (イヴもしくはノイズによって、量子ビットの状態が変化)
+            # err_num += 1
     err_str = ''.join(['!' if ka[i] != kb[i] else ' ' for i in range(len(ka))])
+    for i in range(len(ka)):
+        if  ka[i] != kb[i]:
+            err_num += 1
 
     print("Alice's remaining bits:                    " + ka)
     print("Error positions (by Eve and noise):        " + err_str)
     print("Bob's remaining bits:                      " + kb)
+    print("Alice basis:                               " + alice_basis)
+    print("Eve basis:                                 " + eve_basis)
+    print("Bob basis:                                 " + bob_basis)
+    print("Alice bit:                                 " + alice_bits)
+    print("Bob bit:                                   " + bob_bits)
+
+    print(f"QBER:                                        {err_num / len(ka) * 100}")
 
 # Final key agreement process
 
@@ -230,12 +241,23 @@ def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
     return ka, kb
 
 # capture qubits, measure and send to Bob
-def intercept_resend(qc,e):
+def intercept_resend(qc,eve_basis):
     backend = Aer.get_backend('qasm_simulator') 
-    l = len(e)
+    l = len(eve_basis)
+
+    num_to_intercept = int(num_qubit_mac * 0.1)  # イヴが盗聴する光子の数(例：24 * 0.5 = 12)
+    to_intercept = random.sample(range(num_qubit_mac), num_to_intercept)
+    to_intercept = sorted(to_intercept)
+    # print(to_intercept)
+    eve_basis = list(eve_basis)
+
+    for i in range(len(eve_basis)):
+        if i not in to_intercept:
+            eve_basis[i] = '!'
+
 
     for i in range(l):
-        if e[i] == '1':
+        if eve_basis[i] == '1':
             qc.h(i)
 
     qc.measure(list(range(l)),list(range(l))) 
@@ -249,7 +271,7 @@ def intercept_resend(qc,e):
 
     # イヴの情報を元に、アリスと同じエンコードをして、量子ビットの偏光状態を決める
     for i in range(l):
-        if e[i] == '0':
+        if eve_basis[i] == '0':
             if bits[i] == '1':
                 qc.x(i)
         else:
