@@ -10,12 +10,12 @@ import random
 
 
 
-count = 3
-sifted_key_length = 1024
+count = 1
+sifted_key_length = 10000
 num_qubits_linux = 12 # for Linux
-num_qubits_mac = 19 # for mac
+num_qubits_mac = 12 # for mac
 backend = Aer.get_backend('qasm_simulator')
-intercept_prob = 0.1
+intercept_prob = 0
 noise_prob = 0
 
 
@@ -299,28 +299,31 @@ def main():
     Qber = 0
     
     for i in range(count):
-        start = time.time()
         ka = ''
         kb = ''
         num_error = 0
         repeat = 0
         totaltotal_keyrate = 0
-        while(len(ka) < sifted_key_length):
+        start = time.time()
+        while(len(ka) <= sifted_key_length):
             repeat += 1
             part_ka, part_kb = generate_Siftedkey(user0, user1, num_qubits_mac)
             for j in range(len(part_ka)):
                 if part_ka[j] != part_kb[j]:
                     num_error += 1
                 else:
-                    ka = part_ka
-                    kb = part_kb
+                    ka += part_ka
+                    kb += part_kb
             if len(ka) > sifted_key_length:
                 ka = ka[:sifted_key_length]
                 kb = kb[:sifted_key_length]
+                break
         
         end = time.time()
+        print(len(ka))
         runtime = end - start
         keyrate = len(ka) / runtime
+        print(f"Key Rate: {keyrate}")
         total_keyrate += keyrate
         Qber_ratio += num_error/len(ka)*100
         Qber += Qber_ratio
@@ -335,6 +338,9 @@ def main():
     print(f"Intercept-and-resend Ratio:      {intercept_prob*100}%")
     print(f'Key Rate ({count} average); {total_keyrate / count}')
     print(f"QBER({count} average): ", {Qber/count})
+
+
+
 
 if __name__ == '__main__':
     main()
