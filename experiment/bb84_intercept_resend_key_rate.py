@@ -10,12 +10,12 @@ import random
 
 
 
-count = 2
+count = 3
 sifted_key_length = 1024
 num_qubits_linux = 12 # for Linux
-num_qubits_mac = 20 # for mac
+num_qubits_mac = 19 # for mac
 backend = Aer.get_backend('qasm_simulator')
-intercept_prob = 0
+intercept_prob = 0.1
 noise_prob = 0
 
 
@@ -40,7 +40,6 @@ user1 = User("Bob", None, None, None)
 
 
 def generate_Siftedkey(user0, user1, num_qubits):
-    start = time.time()
     alice_bits = qrng(num_qubits)
     alice_basis = qrng(num_qubits)
     bob_basis = qrng(num_qubits)
@@ -116,10 +115,9 @@ def generate_Siftedkey(user0, user1, num_qubits):
     receiver_classical_channel.close()
     # print("eve_basis: ", eve_basis)
 
-    end = time.time()
-    runtime = end - start
+  
     
-    return ka, kb, runtime, len(ka)
+    return ka, kb
 
 
 
@@ -301,6 +299,7 @@ def main():
     Qber = 0
     
     for i in range(count):
+        start = time.time()
         ka = ''
         kb = ''
         num_error = 0
@@ -308,19 +307,21 @@ def main():
         totaltotal_keyrate = 0
         while(len(ka) < sifted_key_length):
             repeat += 1
-            part_ka, part_kb, runtime, key_length = generate_Siftedkey(user0, user1, num_qubits_mac)
-            ka += part_ka
-            kb += part_kb
-            # print(f"Key length:{key_length}")
-            # print(f"Runtime: {runtime}")
-            # print(f"Key rate: {key_length/runtime}")
-            # total_runtime += runtime
-            # total_keylength += key_length
-            total_keyrate += key_length/runtime
-            # print(total_keyrate)
-        for j in range(len(ka)):
-            if ka[j] != kb[j]:
-                num_error += 1
+            part_ka, part_kb = generate_Siftedkey(user0, user1, num_qubits_mac)
+            for j in range(len(part_ka)):
+                if part_ka[j] != part_kb[j]:
+                    num_error += 1
+                else:
+                    ka = part_ka
+                    kb = part_kb
+            if len(ka) > sifted_key_length:
+                ka = ka[:sifted_key_length]
+                kb = kb[:sifted_key_length]
+        
+        end = time.time()
+        runtime = end - start
+        keyrate = len(ka) / runtime
+        total_keyrate += keyrate
         Qber_ratio += num_error/len(ka)*100
         Qber += Qber_ratio
         print(f"QBER: {Qber_ratio}")    
@@ -332,7 +333,7 @@ def main():
     
     print(f"Channel Noise Ratio:             {noise_prob*100}%")
     print(f"Intercept-and-resend Ratio:      {intercept_prob*100}%")
-    print(f'Key Rate ({count} average); {totaltotal_keyrate / count}')
+    print(f'Key Rate ({count} average); {total_keyrate / count}')
     print(f"QBER({count} average): ", {Qber/count})
 
 if __name__ == '__main__':
