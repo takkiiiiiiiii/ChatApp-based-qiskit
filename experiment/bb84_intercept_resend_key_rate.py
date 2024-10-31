@@ -11,12 +11,12 @@ import random
 
 
 count = 10
-sifted_key_length = 10000
+sifted_key_length = 1001
 num_qubits_linux = 12 # for Linux
 num_qubits_mac = 12 # for mac
 backend = Aer.get_backend('qasm_simulator')
-intercept_prob = 0.4
-noise_prob = 0.09
+intercept_prob = 0
+noise_prob = 0.15
 
 
 class User:
@@ -304,32 +304,37 @@ def main():
         num_error = 0
         repeat = 0
         totaltotal_keyrate = 0
+        error = ''
         start = time.time()
         while(len(ka) <= sifted_key_length):
             repeat += 1
             part_ka, part_kb = generate_Siftedkey(user0, user1, num_qubits_mac)
-            for j in range(len(part_ka)):
-                if part_ka[j] != part_kb[j]:
-                    num_error += 1
-                else:
-                    ka += part_ka
-                    kb += part_kb
+            ka += part_ka
+            kb += part_kb
+            
             if len(ka) > sifted_key_length:
                 ka = ka[:sifted_key_length]
                 kb = kb[:sifted_key_length]
                 break
-        
-        end = time.time()
+        for j in range(len(ka)):
+            if ka[j] != kb[j]:
+                error += '!'
+                num_error += 1
+            else:
+                error += ' '
         print(len(ka))
+        reconciled_key_array = key_reconciliation_Hamming(ka, kb)
+        reconciled_key = ''.join(map(str, map(int, reconciled_key_array)))
+        end = time.time()
+        print(f"Reconcilied key: {reconciled_key}")
         runtime = end - start
         keyrate = len(ka) / runtime
         print(f"Key Rate: {keyrate}")
         total_keyrate += keyrate
-        Qber_ratio += num_error/len(ka)*100
+        print(f"num_error {num_error}")
+        Qber_ratio = num_error/len(ka)*100
         Qber += Qber_ratio
-        print(f"QBER: {Qber_ratio}")    
-        # totaltotal_runtime += total_runtime  
-        # totaltotal_keylength += total_keylength
+        print(f"QBER: {Qber_ratio}")
         totaltotal_keyrate += total_keyrate/repeat
     
     print(totaltotal_keyrate)

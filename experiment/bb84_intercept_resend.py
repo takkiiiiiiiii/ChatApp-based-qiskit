@@ -10,13 +10,13 @@ import random
 
 
 
-count = 100
+count = 10
 sifted_key_length = 1024
 num_qubits_linux = 12 # for Linux
-num_qubits_mac = 20 # for mac
+num_qubits_mac = 12 # for mac
 backend = Aer.get_backend('qasm_simulator')
-intercept_prob = 0.2
-noise_prob = 0
+intercept_prob = 0
+noise_prob = 0.01
 
 
 class User:
@@ -314,6 +314,7 @@ def main():
                 error += ' '
         total_error += num_error
         Qber += num_error/len(ka)*100
+        print(f"num_error {num_error}")
         print(f"The number of Quantum Bit Error: {num_error}/{sifted_key_length}")
         print(f"QBER: ", {num_error/len(ka)*100})
 
