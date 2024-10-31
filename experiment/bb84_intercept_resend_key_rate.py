@@ -10,13 +10,13 @@ import random
 
 
 
-count = 1
+count = 10
 sifted_key_length = 10000
 num_qubits_linux = 12 # for Linux
 num_qubits_mac = 12 # for mac
 backend = Aer.get_backend('qasm_simulator')
-intercept_prob = 0
-noise_prob = 0
+intercept_prob = 0.4
+noise_prob = 0.09
 
 
 class User:
