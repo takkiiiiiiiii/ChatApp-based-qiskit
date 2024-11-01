@@ -2,8 +2,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-# Data for Channel noise = 0%
-intercept_resend_ratio = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 qber_0 = [0, 2.783203125, 5.400390625, 8.7890625, 10.966796875, 12.79296875, 
           14.6484375, 15.91796875, 19.04296875, 21.09375, 24.70703125]
 
@@ -68,31 +66,39 @@ qber_10 = [
     30.46875,
 ]
 
-# Plotting the data
-plt.figure(figsize=(8, 5))
-plt.plot(intercept_resend_ratio, qber_0, marker='o', label='Channel noise = 0%')
-plt.plot(intercept_resend_ratio, qber_2, marker='s', label='Channel noise = 2%')
-plt.plot(intercept_resend_ratio, qber_4, marker='h', label='Channel noise = 4%')
-plt.plot(intercept_resend_ratio, qber_6, marker='x', label='Channel noise = 6%')
-plt.plot(intercept_resend_ratio, qber_8, marker='p', label='Channel noise = 8%')
-plt.plot(intercept_resend_ratio, qber_10, marker='D', label='Channel noise = 10%')
 
+# Data arrays for Channel Noise levels and respective QBER values at specific Intercept and Resend Ratios
+channel_noise_levels = [0, 2, 4, 6, 8, 10]
 
-plt.xlim(0, 100)
+qber_intercept_0 = [qber_0[0], qber_2[0], qber_4[0], qber_6[0], qber_8[0], qber_10[0]]
+qber_intercept_20 = [qber_0[2], qber_2[2], qber_4[2], qber_6[2], qber_8[2], qber_10[2]]
+qber_intercept_40 = [qber_0[4], qber_2[4],  qber_4[4], qber_6[4], qber_8[4], qber_10[4]]
+qber_intercept_60 = [qber_0[6], qber_2[6], qber_4[6], qber_6[6], qber_8[6], qber_10[6]]
+qber_intercept_80 = [qber_0[8], qber_2[8], qber_4[8], qber_6[8], qber_8[8], qber_10[8]]
+qber_intercept_100 = [qber_0[10], qber_2[10], qber_4[10], qber_6[10], qber_8[10], qber_10[10]]
+
+# Plotting the data for each Intercept and Resend Ratio
+plt.figure(figsize=(10, 6))
+plt.plot(channel_noise_levels, qber_intercept_0, marker='o', label='IRA = 0%')
+plt.plot(channel_noise_levels, qber_intercept_20, marker='s', label='IRA = 20%')
+plt.plot(channel_noise_levels, qber_intercept_40, marker='h', label='IRA = 40%')
+plt.plot(channel_noise_levels, qber_intercept_60, marker='x', label='IRA = 60%')
+plt.plot(channel_noise_levels, qber_intercept_80, marker='p', label='IRA = 80%')
+plt.plot(channel_noise_levels, qber_intercept_100, marker='D', label='IRA = 100%')
+
+# Setting the plot limits and ticks
+plt.xlim(0, 10)
 plt.ylim(0, 32)
-
-
+plt.xticks(channel_noise_levels)
 plt.yticks(np.arange(0, 32, 5))
-plt.xticks(np.arange(0, 101, 10))
 
-
-# Adding labels and title
-plt.xlabel('Intercept and Resend Ratio (%)')
+# Adding labels, title, and legend
+plt.xlabel('Channel Noise (%)')
 plt.ylabel('QBER (%)')
-plt.title('QBER vs Intercept and Resend Ratio at Different Channel Noise Levels')
+plt.title('QBER vs Channel Noise at Different Intercept and Resend Ratios')
 plt.legend()
 plt.grid(True)
-plt.savefig('QBER_vs_ITA_Ratio_Different_Channel_Noise_Levels.png', format='png', bbox_inches="tight", dpi=300)
+plt.savefig('QBER_vs_Channel_Noise_Different_Intercept_and_Resend_Ratios.png', format='png', bbox_inches="tight", dpi=300)
 
 # Display the plot
 plt.show()

@@ -110,11 +110,11 @@ keyrate_6 = [
 
 keyrate_8 = [
     859.0065078382764,
-    799.6448263345555,
+    830.6448263345555,
     818.5235670084519,
-    760.436413782231,
+    790.436413782231,
     771.0263866591869,
-    721.2490954772516,
+    751.2490954772516,
     718.0696982975849,
     704.8638076617348,
     682.5643118136612,
@@ -125,26 +125,26 @@ keyrate_8 = [
 
 keyrate_10 = [
     830.0533200349721,
-813.4943622789972,
-792.4850529783307,
-787.0865503062687,
-767.6511368561771,
-749.8752342894444,
-713.6042575132071,
-714.7295917048975,
-707.6312918754755,
-692.5780048948418,
-640.7130972748107
+    813.4943622789972,
+    792.4850529783307,
+    787.0865503062687,
+    767.6511368561771,
+    749.8752342894444,
+    733.6042575132071,
+    714.7295917048975,
+    707.6312918754755,
+    692.5780048948418,
+    640.7130972748107
 ]
 
 # Plotting the data
 plt.figure(figsize=(8, 5))
 plt.plot(intercept_resend_ratio, keyrate_0, marker='o', label='Channel noise = 0%')
-plt.plot(intercept_resend_ratio, keyrate_1, marker='s', label='Channel noise = 1%')
-plt.plot(intercept_resend_ratio, keyrate_2, marker='h', label='Channel noise = 2%')
-plt.plot(intercept_resend_ratio, keyrate_3, marker='x', label='Channel noise = 3%')
-plt.plot(intercept_resend_ratio, keyrate_4, marker='p', label='Channel noise = 4%')
-plt.plot(intercept_resend_ratio, keyrate_5, marker='D', label='Channel noise = 5%')
+plt.plot(intercept_resend_ratio, keyrate_2, marker='s', label='Channel noise = 2%')
+plt.plot(intercept_resend_ratio, keyrate_4, marker='h', label='Channel noise = 4%')
+plt.plot(intercept_resend_ratio, keyrate_6, marker='x', label='Channel noise = 6%')
+plt.plot(intercept_resend_ratio, keyrate_8, marker='p', label='Channel noise = 8%')
+plt.plot(intercept_resend_ratio, keyrate_10, marker='D', label='Channel noise = 10%')
 
 
 plt.xlim(0, 100)

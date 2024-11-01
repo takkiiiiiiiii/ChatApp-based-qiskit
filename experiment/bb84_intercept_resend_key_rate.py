@@ -11,12 +11,12 @@ import random
 
 
 count = 10
-sifted_key_length = 1001
+sifted_key_length = 1024
 num_qubits_linux = 12 # for Linux
 num_qubits_mac = 12 # for mac
 backend = Aer.get_backend('qasm_simulator')
 intercept_prob = 0
-noise_prob = 0.15
+noise_prob = 0.08
 
 
 class User:
@@ -324,9 +324,10 @@ def main():
                 error += ' '
         print(len(ka))
         reconciled_key_array = key_reconciliation_Hamming(ka, kb)
-        reconciled_key = ''.join(map(str, map(int, reconciled_key_array)))
+        # reconciled_key = ''.join(map(str, map(int, reconciled_key_array)))
         end = time.time()
-        print(f"Reconcilied key: {reconciled_key}")
+        print(ka, kb)
+        print(f"Reconcilied key: {reconciled_key_array}")
         runtime = end - start
         keyrate = len(ka) / runtime
         print(f"Key Rate: {keyrate}")
