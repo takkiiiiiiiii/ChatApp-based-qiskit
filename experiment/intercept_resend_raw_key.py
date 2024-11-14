@@ -11,7 +11,7 @@ import time
 
 count = 1000
 sifted_key_length = 1000
-# num_qubits_linux = 16
+num_qubits_linux = 16
 backend = Aer.get_backend('qasm_simulator')
 intercept_prob = 0
 noise_prob = 0
@@ -42,7 +42,7 @@ def generate_Siftedkey(user0, user1, num_qubits):
     alice_bits = qrng(num_qubits)
     alice_basis = qrng(num_qubits)
     bob_basis = qrng(num_qubits)
-    # eve_basis = qrng(num_qubits)
+    eve_basis = qrng(num_qubits)
 
     # Alice generates qubits
     qc = compose_quantum_circuit(num_qubits, alice_bits, alice_basis)
@@ -51,12 +51,12 @@ def generate_Siftedkey(user0, user1, num_qubits):
     qc2 = compose_quantum_circuit_for_eve(num_qubits, alice_bits, alice_basis)
 
     # Eve eavesdrops Alice's qubits
-    # qc, eve_basis, eve_bits = intercept_resend(qc, qc2, eve_basis, intercept_prob)
+    qc, eve_basis, eve_bits = intercept_resend(qc, qc2, eve_basis, intercept_prob)
 
     # Comparison their basis between Alice and Eve
-    # ae_basis, ae_match = check_bases(alice_basis, eve_basis)
+    ae_basis, ae_match = check_bases(alice_basis, eve_basis)
     # Comparison their bits between Alice and Eve
-    # ae_bits = check_bits(alice_bits,eve_bits,ae_basis)
+    ae_bits = check_bits(alice_bits,eve_bits,ae_basis)
 
     # Apply the quantum error chanel
     noise_model = apply_noise_model(noise_prob)
@@ -91,13 +91,13 @@ def generate_Siftedkey(user0, user1, num_qubits):
     ab_bits = check_bits(alice_bits, bob_bits, ab_basis)
 
     for i in range(num_qubits):
-        # if ae_basis[i] != 'Y' and ab_basis[i] == 'Y': # アリスとイヴ間で基底は異なる(量子ビットの状態が変わる)、アリスとボブ間では一致
-            # altered_qubits += 1
+        if ae_basis[i] != 'Y' and ab_basis[i] == 'Y': # アリスとイヴ間で基底は異なる(量子ビットの状態が変わる)、アリスとボブ間では一致
+            altered_qubits += 1
         if ab_basis[i] == 'Y': # アリスとボブ間で基底が一致
             ka += alice_bits[i] 
             kb += bob_bits[i]
         # if ae_basis[i] == 'Y': # アリスとイヴ間で基底が一致
-            # ke += eve_bits[i]
+        #     ke += eve_bits[i]
         if ab_bits[i] == '!': # アリスとボブ間で基底は一致のはずだが、ビット値が異なる (イヴもしくはノイズによって、量子ビットの状態が変化)
             err_num += 1
     err_str = ''.join(['!' if ka[i] != kb[i] else ' ' for i in range(len(ka))])
@@ -234,50 +234,50 @@ def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
 
 
 # intercept Alice'squbits to measure and resend to Bob
-# def intercept_resend(qc, qc2, eve_basis , intercept_prob):
-#     backend = Aer.get_backend('qasm_simulator')
+def intercept_resend(qc, qc2, eve_basis , intercept_prob):
+    backend = Aer.get_backend('qasm_simulator')
 
-#     l = len(eve_basis)
-#     num_to_intercept = int(num_qubits_linux * intercept_prob)
-#     to_intercept = random.sample(range(num_qubits_linux), num_to_intercept)
-#     to_intercept = sorted(to_intercept)
-#     # print(to_intercept)
-#     eve_basis = list(eve_basis)
+    l = len(eve_basis)
+    num_to_intercept = int(num_qubits_linux * intercept_prob)
+    to_intercept = random.sample(range(num_qubits_linux), num_to_intercept)
+    to_intercept = sorted(to_intercept)
+    # print(to_intercept)
+    eve_basis = list(eve_basis)
 
-#     for i in range(len(eve_basis)):
-#         if i not in to_intercept:
-#             eve_basis[i] = '!'
+    for i in range(len(eve_basis)):
+        if i not in to_intercept:
+            eve_basis[i] = '!'
 
-#     # print(f"Eve basis: {eve_basis}")
+    # print(f"Eve basis: {eve_basis}")
 
-#     for i in to_intercept:
-#         if eve_basis[i] == '1':
-#             qc.h(i)
-#             qc2.h(i)
+    for i in to_intercept:
+        if eve_basis[i] == '1':
+            qc.h(i)
+            qc2.h(i)
 
-#     qc2.measure(list(range(l)),list(range(l))) 
-#     result = execute(qc2,backend,shots=1).result() 
-#     bits = list(result.get_counts().keys())[0] 
-#     bits = ''.join(list(reversed(bits)))
+    qc2.measure(list(range(l)),list(range(l))) 
+    result = execute(qc2,backend,shots=1).result() 
+    bits = list(result.get_counts().keys())[0] 
+    bits = ''.join(list(reversed(bits)))
 
-#     # qc.reset(list(range(l)))
+    # qc.reset(list(range(l)))
     
-#     # イヴの情報を元に、アリスと同じエンコードをして、量子ビットの偏光状態を決める
-#     for i in range (l):
-#         if eve_basis[i] == '0':
-#             if bits[i] == '1':
-#                 qc.x(i)
-#         elif eve_basis[i] == '1':
-#             if bits[i] == '0':
-#                 qc.h(i)
-#             else:
-#                 qc.x(i)
-#                 qc.h(i)
+    # イヴの情報を元に、アリスと同じエンコードをして、量子ビットの偏光状態を決める
+    for i in range (l):
+        if eve_basis[i] == '0':
+            if bits[i] == '1':
+                qc.x(i)
+        elif eve_basis[i] == '1':
+            if bits[i] == '0':
+                qc.h(i)
+            else:
+                qc.x(i)
+                qc.h(i)
 
-#     # display(qc.draw())
-#     qc.barrier()
+    # display(qc.draw())
+    qc.barrier()
 
-#     return [qc, eve_basis ,bits]
+    return [qc, eve_basis ,bits]
 
 # execute 1000 times
 # Derive the final key rate
@@ -285,7 +285,7 @@ def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
 def main():
     print(f"Channel Noise Ratio:             {noise_prob*100}%")
     print(f"Intercept-and-resend Ratio:      {intercept_prob*100}%")
-    for j in range (27, 30):
+    for j in range (27, 29):
         if j == 0:
             continue
         total_rawkeyrate = 0
