@@ -8,11 +8,10 @@ import random
 import math
 import time                                                                                                                                                             
 
-#Execution time for raw key: Time taken by Alice to prepare the bits and send them to Bob and for Bob to measure them.
 
-count = 100
+count = 1000
 sifted_key_length = 1000
-num_qubits_linux = 12 # for Linux
+# num_qubits_linux = 16
 backend = Aer.get_backend('qasm_simulator')
 intercept_prob = 0
 noise_prob = 0
@@ -43,7 +42,7 @@ def generate_Siftedkey(user0, user1, num_qubits):
     alice_bits = qrng(num_qubits)
     alice_basis = qrng(num_qubits)
     bob_basis = qrng(num_qubits)
-    eve_basis = qrng(num_qubits)
+    # eve_basis = qrng(num_qubits)
 
     # Alice generates qubits
     qc = compose_quantum_circuit(num_qubits, alice_bits, alice_basis)
@@ -52,10 +51,10 @@ def generate_Siftedkey(user0, user1, num_qubits):
     qc2 = compose_quantum_circuit_for_eve(num_qubits, alice_bits, alice_basis)
 
     # Eve eavesdrops Alice's qubits
-    qc, eve_basis, eve_bits = intercept_resend(qc, qc2, eve_basis, intercept_prob)
+    # qc, eve_basis, eve_bits = intercept_resend(qc, qc2, eve_basis, intercept_prob)
 
     # Comparison their basis between Alice and Eve
-    ae_basis, ae_match = check_bases(alice_basis, eve_basis)
+    # ae_basis, ae_match = check_bases(alice_basis, eve_basis)
     # Comparison their bits between Alice and Eve
     # ae_bits = check_bits(alice_bits,eve_bits,ae_basis)
 
@@ -80,7 +79,7 @@ def generate_Siftedkey(user0, user1, num_qubits):
     # Bob sifted key
     kb=''
     # Eve sifted key
-    ke= eve_bits
+    # ke= eve_bits
     # アリスとボブ間で基底は一致のはずだが、ビット値が異なる(ノイズや盗聴者によるエラー)数
     err_num = 0
 
@@ -92,8 +91,8 @@ def generate_Siftedkey(user0, user1, num_qubits):
     ab_bits = check_bits(alice_bits, bob_bits, ab_basis)
 
     for i in range(num_qubits):
-        if ae_basis[i] != 'Y' and ab_basis[i] == 'Y': # アリスとイヴ間で基底は異なる(量子ビットの状態が変わる)、アリスとボブ間では一致
-            altered_qubits += 1
+        # if ae_basis[i] != 'Y' and ab_basis[i] == 'Y': # アリスとイヴ間で基底は異なる(量子ビットの状態が変わる)、アリスとボブ間では一致
+            # altered_qubits += 1
         if ab_basis[i] == 'Y': # アリスとボブ間で基底が一致
             ka += alice_bits[i] 
             kb += bob_bits[i]
@@ -235,50 +234,50 @@ def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
 
 
 # intercept Alice'squbits to measure and resend to Bob
-def intercept_resend(qc, qc2, eve_basis , intercept_prob):
-    backend = Aer.get_backend('qasm_simulator')
+# def intercept_resend(qc, qc2, eve_basis , intercept_prob):
+#     backend = Aer.get_backend('qasm_simulator')
 
-    l = len(eve_basis)
-    num_to_intercept = int(num_qubits_linux * intercept_prob)
-    to_intercept = random.sample(range(num_qubits_linux), num_to_intercept)
-    to_intercept = sorted(to_intercept)
-    # print(to_intercept)
-    eve_basis = list(eve_basis)
+#     l = len(eve_basis)
+#     num_to_intercept = int(num_qubits_linux * intercept_prob)
+#     to_intercept = random.sample(range(num_qubits_linux), num_to_intercept)
+#     to_intercept = sorted(to_intercept)
+#     # print(to_intercept)
+#     eve_basis = list(eve_basis)
 
-    for i in range(len(eve_basis)):
-        if i not in to_intercept:
-            eve_basis[i] = '!'
+#     for i in range(len(eve_basis)):
+#         if i not in to_intercept:
+#             eve_basis[i] = '!'
 
-    # print(f"Eve basis: {eve_basis}")
+#     # print(f"Eve basis: {eve_basis}")
 
-    for i in to_intercept:
-        if eve_basis[i] == '1':
-            qc.h(i)
-            qc2.h(i)
+#     for i in to_intercept:
+#         if eve_basis[i] == '1':
+#             qc.h(i)
+#             qc2.h(i)
 
-    qc2.measure(list(range(l)),list(range(l))) 
-    result = execute(qc2,backend,shots=1).result() 
-    bits = list(result.get_counts().keys())[0] 
-    bits = ''.join(list(reversed(bits)))
+#     qc2.measure(list(range(l)),list(range(l))) 
+#     result = execute(qc2,backend,shots=1).result() 
+#     bits = list(result.get_counts().keys())[0] 
+#     bits = ''.join(list(reversed(bits)))
 
-    # qc.reset(list(range(l)))
+#     # qc.reset(list(range(l)))
     
-    # イヴの情報を元に、アリスと同じエンコードをして、量子ビットの偏光状態を決める
-    for i in range (l):
-        if eve_basis[i] == '0':
-            if bits[i] == '1':
-                qc.x(i)
-        elif eve_basis[i] == '1':
-            if bits[i] == '0':
-                qc.h(i)
-            else:
-                qc.x(i)
-                qc.h(i)
+#     # イヴの情報を元に、アリスと同じエンコードをして、量子ビットの偏光状態を決める
+#     for i in range (l):
+#         if eve_basis[i] == '0':
+#             if bits[i] == '1':
+#                 qc.x(i)
+#         elif eve_basis[i] == '1':
+#             if bits[i] == '0':
+#                 qc.h(i)
+#             else:
+#                 qc.x(i)
+#                 qc.h(i)
 
-    # display(qc.draw())
-    qc.barrier()
+#     # display(qc.draw())
+#     qc.barrier()
 
-    return [qc, eve_basis ,bits]
+#     return [qc, eve_basis ,bits]
 
 # execute 1000 times
 # Derive the final key rate
@@ -286,52 +285,59 @@ def intercept_resend(qc, qc2, eve_basis , intercept_prob):
 def main():
     print(f"Channel Noise Ratio:             {noise_prob*100}%")
     print(f"Intercept-and-resend Ratio:      {intercept_prob*100}%")
-    print(f"Numnber of Qubits:               {num_qubits_linux}")
-    total_rawkeyrate = 0
-    # total_raw_keyrate = 0
-    num_error = 0
-    qber = 0
-    total_qber = 0
-    for i in range(count):
-        part_ka, part_kb, runtime = generate_Siftedkey(user0, user1, num_qubits_linux)
-        raw_keyrate = num_qubits_linux / runtime
-        print(f"Rawkey Rate(Round {i+1}): {raw_keyrate} bps")
-        num_error = 0
-        total_rawkeyrate += raw_keyrate
-        error = ''
-        num_qubits = 0 # the number of all qubits to generate sifted key
-        # while(len(ka) < sifted_key_length):
-        #     part_ka, part_kb = generate_Siftedkey(user0, user1, num_qubits_linux)
-        #     ka += part_ka
-        #     kb += part_kb
-        #     num_qubits += num_qubits_linux
-        #     # if len(ka) > sifted_key_length:
-        #     #     ka = ka[:sifted_key_length]
-        #     #     kb = kb[:sifted_key_length]
-        #     #     num_qubits += 
-        #     #     break
-        # print(f"Length of Sifted key: {len(ka)}")
-        # for j in range(len(ka)):
-        #     if ka[j] != kb[j]:
-        #         error += '!'
-        #         num_error += 1
-        #     else:
-        #         error += ' '
-        # qber = num_error/len(ka)
-        # print(f"QBER:             {qber*100}%")
-        # print(f"Number of qubits: {num_qubits}")
-        # if qber == 0:
-        #     binaty_entropy_func = 0
-        # else:
-        #     binaty_entropy_func = -qber*math.log2(qber)-(1-qber)*math.log2(1-qber)
-        
-        # # bit/pulse(< 1)
-        # final_keyrate = (1 - (1 + kr_efficiency)*binaty_entropy_func) * len(ka) / num_qubits
-        # print(f"Final Key Rate: {final_keyrate}")
-        # total_qber += qber*100
-        # total_keyrate += final_keyrate
-
-    print(f"Average of Raw key rate:             {total_rawkeyrate/count} bps")
+    for j in range (27, 30):
+        if j == 0:
+            continue
+        total_rawkeyrate = 0
+        total_siftedkeyrate = 0
+        total_executiontime = 0
+        print(f"Numnber of Qubits:               {j}")
+        for i in range(count):
+            part_ka, part_kb, execution_time = generate_Siftedkey(user0, user1, j)
+            raw_keyrate = j / execution_time
+            sifted_keyrate = len(part_ka) / execution_time
+            # print(f"length of sifted key {len(part_ka)}")
+            # print(f"Rawkey Rate(Round {i+1}): {raw_keyrate} bps")
+            # print(f"Siftedkey Rate(Round {i+1}): {sifted_keyrate} bps")
+            total_rawkeyrate += raw_keyrate
+            total_siftedkeyrate += sifted_keyrate
+            total_executiontime += execution_time
+            error = ''
+            num_qubits = 0 # the number of all qubits to generate sifted key
+            # while(len(ka) < sifted_key_length):
+            #     part_ka, part_kb = generate_Siftedkey(user0, user1, num_qubits_linux)
+            #     ka += part_ka
+            #     kb += part_kb
+            #     num_qubits += num_qubits_linux
+            #     # if len(ka) > sifted_key_length:
+            #     #     ka = ka[:sifted_key_length]
+            #     #     kb = kb[:sifted_key_length]
+            #     #     num_qubits += 
+            #     #     break
+            # print(f"Length of Sifted key: {len(ka)}")
+            # for j in range(len(ka)):
+            #     if ka[j] != kb[j]:
+            #         error += '!'
+            #         num_error += 1
+            #     else:
+            #         error += ' '
+            # qber = num_error/len(ka)
+            # print(f"QBER:             {qber*100}%")
+            # print(f"Number of qubits: {num_qubits}")
+            # if qber == 0:
+            #     binaty_entropy_func = 0
+            # else:
+            #     binaty_entropy_func = -qber*math.log2(qber)-(1-qber)*math.log2(1-qber)
+            
+            # # bit/pulse(< 1)
+            # final_keyrate = (1 - (1 + kr_efficiency)*binaty_entropy_func) * len(ka) / num_qubits
+            # print(f"Final Key Rate: {final_keyrate}")
+            # total_qber += qber*100
+            # total_keyrate += final_keyrate
+        print(F"Number of Qubits: {j}")
+        print(f"Average of Raw key rate:             {total_rawkeyrate/count} bps")
+        print(f"Average of Sifted key rate:             {total_siftedkeyrate/count} bps")
+        print(f"Average of Execution time:             {total_executiontime/count} s")
 
     # print(f'Final Key Rate (average of {count}):  {total_keyrate / count}')
     # print(f"QBER (average of {count}):             {total_qber/count}")
