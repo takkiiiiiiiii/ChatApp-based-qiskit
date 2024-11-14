@@ -285,7 +285,7 @@ def intercept_resend(qc, qc2, eve_basis , intercept_prob):
 def main():
     print(f"Channel Noise Ratio:             {noise_prob*100}%")
     print(f"Intercept-and-resend Ratio:      {intercept_prob*100}%")
-    for j in range (27, 29):
+    for j in range (22, 24):
         if j == 0:
             continue
         total_rawkeyrate = 0
