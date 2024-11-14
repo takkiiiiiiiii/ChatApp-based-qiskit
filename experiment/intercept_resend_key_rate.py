@@ -4,20 +4,19 @@ from kr_Hamming import key_reconciliation_Hamming
 from IPython.display import display
 from qiskit.tools.visualization import plot_histogram
 import numpy as np
-import time
 import random
+import math
 
 
 
-
-count = 10
-sifted_key_length = 1024
+count = 5
+sifted_key_length = 1000
 num_qubits_linux = 12 # for Linux
-num_qubits_mac = 12 # for mac
+num_qubits_mac = 19 # for mac
 backend = Aer.get_backend('qasm_simulator')
-intercept_prob = 0.9
-noise_prob = 0.08
-
+intercept_prob = 0.2
+noise_prob = 0.02
+kr_efficiency = 1.22
 
 class User:
     def __init__(self, username: str, sharekey, socket_classical, socket_quantum):
@@ -114,7 +113,9 @@ def generate_Siftedkey(user0, user1, num_qubits):
     sender_classical_channel.close()
     receiver_classical_channel.close()
     # print("eve_basis: ", eve_basis)
-        
+
+  
+    
     return ka, kb
 
 
@@ -235,7 +236,7 @@ def intercept_resend(qc, qc2, eve_basis , intercept_prob):
     backend = Aer.get_backend('qasm_simulator')
 
     l = len(eve_basis)
-    num_to_intercept = int(num_qubits_mac * intercept_prob)  # イヴが盗聴する光子の数(例：24 * 0.5 = 12)
+    num_to_intercept = int(num_qubits_mac * intercept_prob)
     to_intercept = random.sample(range(num_qubits_mac), num_to_intercept)
     to_intercept = sorted(to_intercept)
     # print(to_intercept)
@@ -252,16 +253,6 @@ def intercept_resend(qc, qc2, eve_basis , intercept_prob):
             qc.h(i)
             qc2.h(i)
 
-    # display(qc.draw())
-    # display(qc2.draw())
-
-
-    
-    # for i in range(to_intercept):
-    #     if e[i] == '1':
-    #         qc.h()
-
-    
     qc2.measure(list(range(l)),list(range(l))) 
     result = execute(qc2,backend,shots=1).result() 
     bits = list(result.get_counts().keys())[0] 
@@ -287,44 +278,58 @@ def intercept_resend(qc, qc2, eve_basis , intercept_prob):
     return [qc, eve_basis ,bits]
 
 # execute 1000 times
+# Derive the final key rate
 def main():
-    repeat = 10
-    Qber = 0
-    total_error = 0
-    for i in range(repeat):
+    print(f"Channel Noise Ratio:             {noise_prob*100}%")
+    print(f"Intercept-and-resend Ratio:      {intercept_prob*100}%")
+    final_keyrate = 0
+    total_keyrate = 0
+    num_error = 0
+    qber = 0
+    total_qber = 0
+    for i in range(count):
         ka = ''
         kb = ''
-        error = ''
         num_error = 0
+        error = ''
+        num_qubits = 0 # the number of all qubits to generate sifted key
         while(len(ka) < sifted_key_length):
             part_ka, part_kb = generate_Siftedkey(user0, user1, num_qubits_mac)
             ka += part_ka
             kb += part_kb
-            if len(ka) > sifted_key_length:
-                ka = ka[:sifted_key_length]
-                kb = kb[:sifted_key_length]
-    
-
-    
+            num_qubits += num_qubits_mac
+            # if len(ka) > sifted_key_length:
+            #     ka = ka[:sifted_key_length]
+            #     kb = kb[:sifted_key_length]
+            #     num_qubits += 
+            #     break
+        print(f"Length of Sifted key: {len(ka)}")
         for j in range(len(ka)):
             if ka[j] != kb[j]:
                 error += '!'
                 num_error += 1
             else:
                 error += ' '
-        total_error += num_error
-        Qber += num_error/len(ka)*100
-        print(f"num_error {num_error}")
-        print(f"The number of Quantum Bit Error: {num_error}/{sifted_key_length}")
-        print(f"QBER: ", {num_error/len(ka)*100})
+        qber = num_error/len(ka)
+        print(f"QBER:             {qber*100}%")
+        print(f"Number of qubits: {num_qubits}")
+        if qber == 0:
+            binaty_entropy_func = 0
+        else:
+            binaty_entropy_func = -qber*math.log2(qber)-(1-qber)*math.log2(1-qber)
+        
+        # bit/pulse(< 1)
+        final_keyrate = (1 - (1 + kr_efficiency)*binaty_entropy_func) * len(ka) / num_qubits
+        print(f"Final Key Rate: {final_keyrate}")
+        total_qber += qber*100
+        total_keyrate += final_keyrate
+
 
     print(f"Channel Noise Ratio:             {noise_prob*100}%")
     print(f"Intercept-and-resend Ratio:      {intercept_prob*100}%")
-    print(f"Average of the number of Quantum Bit Error: {total_error/repeat}/{sifted_key_length}")
 
-
-    print(f"QBER: ", {Qber/repeat})
+    print(f'Final Key Rate (average of {count}):  {total_keyrate / count}')
+    print(f"QBER (average of {count}):             {total_qber/count}")
 
 if __name__ == '__main__':
     main()
-

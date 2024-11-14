@@ -70,29 +70,31 @@ qber_10 = [
 
 # Plotting the data
 plt.figure(figsize=(8, 5))
-plt.plot(intercept_resend_ratio, qber_0, marker='o', label='Channel noise = 0%')
-plt.plot(intercept_resend_ratio, qber_2, marker='s', label='Channel noise = 2%')
-plt.plot(intercept_resend_ratio, qber_4, marker='h', label='Channel noise = 4%')
-plt.plot(intercept_resend_ratio, qber_6, marker='x', label='Channel noise = 6%')
-plt.plot(intercept_resend_ratio, qber_8, marker='p', label='Channel noise = 8%')
-plt.plot(intercept_resend_ratio, qber_10, marker='D', label='Channel noise = 10%')
-
+plt.plot(intercept_resend_ratio, qber_0, marker='o', label='Channel noise = 0%', markersize=20)
+plt.plot(intercept_resend_ratio, qber_2, marker='s', label='Channel noise = 2%' ,markersize=20)
+plt.plot(intercept_resend_ratio, qber_4, marker='h', label='Channel noise = 4%', markersize=20)
+plt.plot(intercept_resend_ratio, qber_6, marker='x', label='Channel noise = 6%', markersize=20)
+plt.plot(intercept_resend_ratio, qber_8, marker='p', label='Channel noise = 8%', markersize=20)
+plt.plot(intercept_resend_ratio, qber_10, marker='D', label='Channel noise = 10%', markersize=20)
 
 plt.xlim(0, 100)
 plt.ylim(0, 32)
 
 
-plt.yticks(np.arange(0, 32, 5))
-plt.xticks(np.arange(0, 101, 10))
+plt.yticks(np.arange(0, 32, 5), fontsize=35)
+plt.xticks(np.arange(0, 101, 10), fontsize=35)
 
 
 # Adding labels and title
-plt.xlabel('Intercept and Resend Ratio (%)')
-plt.ylabel('QBER (%)')
-plt.title('QBER vs Intercept and Resend Ratio at Different Channel Noise Levels')
+plt.xlabel('Intercept and Resend Ratio (%)', fontsize=35)
+plt.ylabel('QBER (%)', fontsize=35)
+# plt.title('QBER vs Intercept and Resend Ratio at Different Channel Noise Levels')
 plt.legend()
 plt.grid(True)
 plt.savefig('QBER_vs_ITA_Ratio_Different_Channel_Noise_Levels.png', format='png', bbox_inches="tight", dpi=300)
+
+
+plt.legend(fontsize=25)
 
 # Display the plot
 plt.show()

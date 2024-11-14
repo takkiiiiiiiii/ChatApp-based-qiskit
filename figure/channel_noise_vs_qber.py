@@ -79,26 +79,27 @@ qber_intercept_100 = [qber_0[10], qber_2[10], qber_4[10], qber_6[10], qber_8[10]
 
 # Plotting the data for each Intercept and Resend Ratio
 plt.figure(figsize=(10, 6))
-plt.plot(channel_noise_levels, qber_intercept_0, marker='o', label='IRA = 0%')
-plt.plot(channel_noise_levels, qber_intercept_20, marker='s', label='IRA = 20%')
-plt.plot(channel_noise_levels, qber_intercept_40, marker='h', label='IRA = 40%')
-plt.plot(channel_noise_levels, qber_intercept_60, marker='x', label='IRA = 60%')
-plt.plot(channel_noise_levels, qber_intercept_80, marker='p', label='IRA = 80%')
-plt.plot(channel_noise_levels, qber_intercept_100, marker='D', label='IRA = 100%')
+plt.plot(channel_noise_levels, qber_intercept_0, marker='o', label='IRA = 0%', markersize=20)
+plt.plot(channel_noise_levels, qber_intercept_20, marker='s', label='IRA = 20%', markersize=20)
+plt.plot(channel_noise_levels, qber_intercept_40, marker='h', label='IRA = 40%', markersize=20)
+plt.plot(channel_noise_levels, qber_intercept_60, marker='x', label='IRA = 60%', markersize=20)
+plt.plot(channel_noise_levels, qber_intercept_80, marker='p', label='IRA = 80%', markersize=20)
+plt.plot(channel_noise_levels, qber_intercept_100, marker='D', label='IRA = 100%', markersize=20)
 
 # Setting the plot limits and ticks
 plt.xlim(0, 10)
-plt.ylim(0, 32)
-plt.xticks(channel_noise_levels)
-plt.yticks(np.arange(0, 32, 5))
+plt.ylim(0, 35)
+plt.xticks(channel_noise_levels, fontsize=35)
+plt.yticks(np.arange(0, 35, 5), fontsize=35)
 
 # Adding labels, title, and legend
-plt.xlabel('Channel Noise (%)')
-plt.ylabel('QBER (%)')
-plt.title('QBER vs Channel Noise at Different Intercept and Resend Ratios')
-plt.legend()
+plt.xlabel('Channel Noise (%)', fontsize=35)
+plt.ylabel('QBER (%)', fontsize=35)
+# plt.title('QBER vs Channel Noise at Different Intercept and Resend Ratios')
 plt.grid(True)
 plt.savefig('QBER_vs_Channel_Noise_Different_Intercept_and_Resend_Ratios.png', format='png', bbox_inches="tight", dpi=300)
 
+
+plt.legend(fontsize=25)
 # Display the plot
 plt.show()

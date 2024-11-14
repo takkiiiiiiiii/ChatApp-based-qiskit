@@ -1,41 +1,69 @@
-# ==================================================================================== #
 from qiskit import QuantumCircuit, Aer, execute
-from qiskit_aer.noise import (NoiseModel, QuantumError, pauli_error, 
-depolarizing_error)
-from qiskit_ibm_runtime import QiskitRuntimeService
-from qiskit.compiler import transpile
-from app.main.kr_Hamming import key_reconciliation_Hamming
+from qiskit_aer.noise import (NoiseModel, QuantumError, pauli_error, depolarizing_error)
+from kr_Hamming import key_reconciliation_Hamming
 from IPython.display import display
-import json
+from qiskit.tools.visualization import plot_histogram
+import numpy as np
+import time
+import random
 
+
+
+
+count = 1
+sifted_key_length = 1024
+num_qubits_linux = 12 # for Linux
+num_qubits_mac = 12 # for mac
 backend = Aer.get_backend('qasm_simulator')
+intercept_prob = 0.2
+noise_prob = 0.0
 
-# service = QiskitRuntimeService(channel="ibm_quantum", token="My_Token")
-# backend = service.get_backend('ibm_kyoto')
+
+class User:
+    def __init__(self, username: str, sharekey, socket_classical, socket_quantum):
+        self.username = username
+        self.sharekey = sharekey
+        self.socket_classical = socket_classical
+        self.socket_quantum = socket_quantum
+
+    def create_socket_for_classical(self):
+        import socket
+        SERVER_HOST_CLASSICAL = '127.0.0.1'
+        SERVER_PORT_CLASSICAL = 12001
+        client_socket_classical = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket_classical.connect((SERVER_HOST_CLASSICAL, SERVER_PORT_CLASSICAL))
+        self.socket_classical = client_socket_classical        
+
+user0 = User("Alice", None, None, None) 
+user1 = User("Bob", None, None, None)
 
 
-def Generate_Siftedkey(user0, user1, num_qubits):
+
+def generate_Siftedkey(user0, user1, num_qubits):
     alice_bits = qrng(num_qubits)
     alice_basis = qrng(num_qubits)
     bob_basis = qrng(num_qubits)
     eve_basis = qrng(num_qubits)
 
-    # Alice generates qubits 
+    # Alice generates qubits
     qc = compose_quantum_circuit(num_qubits, alice_bits, alice_basis)
 
+    # Quantum Circuit for Eve
+    qc2 = compose_quantum_circuit_for_eve(num_qubits, alice_bits, alice_basis)
+
     # Eve eavesdrops Alice's qubits
-    # qc, eve_bits = intercept_resend(qc, eve_basis)
+    qc, eve_basis, eve_bits = intercept_resend(qc, qc2, eve_basis, intercept_prob)
 
     # Comparison their basis between Alice and Eve
     ae_basis, ae_match = check_bases(alice_basis, eve_basis)
     # Comparison their bits between Alice and Eve
     # ae_bits = check_bits(alice_bits,eve_bits,ae_basis)
 
-    # Apply the quantum error channel
-    noise_model = apply_noise_model()
+    # Apply the quantum error chanel
+    noise_model = apply_noise_model(noise_prob)
 
     # Bob measure Alice's qubit
-    qc, bob_bits = bob_measurement(qc,bob_basis, noise_model)
+    qc, bob_bits = bob_measurement(qc,bob_basis,noise_model)
 
     # eb_basis, eb_matches = check_bases(eve_basis,bob_basis)
     # eb_bits = check_bits(eve_bits,bob_bits,eb_basis)
@@ -52,13 +80,7 @@ def Generate_Siftedkey(user0, user1, num_qubits):
     # Bob sifted key
     kb=''
     # Eve sifted key
-    ke=''
-
-    # Alice sharekey
-    alice_sharekey = ''
-    # Bob sharekey
-    bob_sharekey = ''
-
+    ke= eve_bits
     # アリスとボブ間で基底は一致のはずだが、ビット値が異なる(ノイズや盗聴者によるエラー)数
     err_num = 0
 
@@ -76,7 +98,7 @@ def Generate_Siftedkey(user0, user1, num_qubits):
             ka += alice_bits[i] 
             kb += bob_bits[i]
         # if ae_basis[i] == 'Y': # アリスとイヴ間で基底が一致
-        #     ke += eve_bits[i]
+            # ke += eve_bits[i]
         if ab_bits[i] == '!': # アリスとボブ間で基底は一致のはずだが、ビット値が異なる (イヴもしくはノイズによって、量子ビットの状態が変化)
             err_num += 1
     err_str = ''.join(['!' if ka[i] != kb[i] else ' ' for i in range(len(ka))])
@@ -89,11 +111,12 @@ def Generate_Siftedkey(user0, user1, num_qubits):
 # From here, it is a process of key reconciliation, but this approach will be implemented later.
 # For the time being, currently, the shifted keys are compared with each other in a single function to generate a share key. (Only eliminating error bit positions in the comparison).
 
-
     sender_classical_channel.close()
     receiver_classical_channel.close()
+    # print("eve_basis: ", eve_basis)
         
     return ka, kb
+
 
 
 def qrng(n):
@@ -101,7 +124,6 @@ def qrng(n):
     qc = QuantumCircuit(n,n)
     for i in range(n):
         qc.h(i) # The Hadamard gate has the effect of projecting a qubit to a 0 or 1 state with equal probability.
-    # measure qubits 0, 1 & 2 to classical bits 0, 1 & 2 respectively
     qc.measure(list(range(n)),list(range(n)))
     # compiled_circuit = transpile(qc, backend)
     # result = backend.run(compiled_circuit, shots=1).result()
@@ -130,30 +152,42 @@ def encode_qubits(n,k,a):
     qc.barrier()
     return qc
 
-def apply_noise_model():
-    p_meas = 0
+# AliceとBobがビット値を生成するための量子回路
+def compose_quantum_circuit(num_qubit, alice_bits, alice_basis) -> QuantumCircuit:
+    qc = QuantumCircuit(num_qubit, num_qubit)
+    qc.compose(encode_qubits(num_qubit, alice_bits, alice_basis), inplace=True)
+    return qc
+
+
+# qcと同じ実装だが、イブのビット値を生成するための量子回路
+def compose_quantum_circuit_for_eve(num_qubit, alice_bits, alice_basis) -> QuantumCircuit:
+    qc2 = QuantumCircuit(num_qubit, num_qubit)
+    qc2.compose(encode_qubits(num_qubit, alice_bits, alice_basis), inplace=True)
+    return qc2
+
+
+def apply_noise_model(p_meas):
     error_meas = pauli_error([('X', p_meas), ('I', 1 - p_meas)])
     noise_model = NoiseModel()
     noise_model.add_all_qubit_quantum_error(error_meas, "measure")
 
     return noise_model
 
-# b = Bob's basis infomation
-# Bob has some error by noise. That means that his sequence of bit is different from Alice's 
-def bob_measurement(qc,b, noise_model):
-    l = len(b)
+
+def bob_measurement(qc,bob_basis,noise_model):
+    l = len(bob_basis)
     for i in range(l): 
-        if b[i] == '1': # In case of Diagonal basis
+        if bob_basis[i] == '1': # In case of Diagonal basis
             qc.h(i)
 
     qc.measure(list(range(l)),list(range(l))) 
-    # compiled_circuit = transpile(qc, backend)
-    # result = backend.run(compiled_circuit, shots=1, noise_model=noise_model).result()
+    # result = execute(qc,backend,shots=10, noise_model=noise_model).result() 
     result = execute(qc,backend,shots=1, noise_model=noise_model).result() 
+    counts = result.get_counts(0)
+    max_key = max(counts, key=counts.get)
+    bits = ''.join(list(reversed(max_key)))
 
-    bits = list(result.get_counts().keys())[0]
-    bits = ''.join(list(reversed(bits)))
-
+    # display(qc.draw())
     qc.barrier() 
     return [qc,bits]
 
@@ -170,7 +204,6 @@ def check_bases(b1,b2):
             check += "-"
     return [check,matches]
 
-
 # check where measurement bits matched
 def check_bits(b1,b2,bck):
     check = ''
@@ -186,13 +219,6 @@ def check_bits(b1,b2,bck):
 
     return check
 
-
-def compose_quantum_circuit(n, alice_bits, a) -> QuantumCircuit:
-    qc = QuantumCircuit(n,n)
-    qc.compose(encode_qubits(n, alice_bits, a), inplace=True)
-    return qc
-
-
 def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
     ka = ''  # kaの初期化
     kb = ''  # kbの初期化
@@ -203,36 +229,102 @@ def compare_bases(n, ab_bases, ab_bits, alice_bits, bob_bits):
     return ka, kb
 
 
-# capture qubits, measure and send to Bob
-def intercept_resend(qc,e):
-    backend = Aer.get_backend('qasm_simulator') 
-    l = len(e)
 
-    for i in range(l):
-        if e[i] == '1':
+# intercept Alice'squbits to measure and resend to Bob
+def intercept_resend(qc, qc2, eve_basis , intercept_prob):
+    backend = Aer.get_backend('qasm_simulator')
+
+    l = len(eve_basis)
+    num_to_intercept = int(num_qubits_mac * intercept_prob)  # イヴが盗聴する光子の数(例：24 * 0.5 = 12)
+    to_intercept = random.sample(range(num_qubits_mac), num_to_intercept)
+    to_intercept = sorted(to_intercept)
+    # print(to_intercept)
+    eve_basis = list(eve_basis)
+
+    for i in range(len(eve_basis)):
+        if i not in to_intercept:
+            eve_basis[i] = '!'
+
+    # print(f"Eve basis: {eve_basis}")
+
+    for i in to_intercept:
+        if eve_basis[i] == '1':
             qc.h(i)
+            qc2.h(i)
 
-    display(qc.draw())
-    qc.measure(list(range(l)),list(range(l))) 
-    result = execute(qc,backend,shots=1).result() 
+    # display(qc.draw())
+    # display(qc2.draw())
+
+
+    
+    # for i in range(to_intercept):
+    #     if e[i] == '1':
+    #         qc.h()
+
+    
+    qc2.measure(list(range(l)),list(range(l))) 
+    result = execute(qc2,backend,shots=1).result() 
     bits = list(result.get_counts().keys())[0] 
     bits = ''.join(list(reversed(bits)))
 
-    qc.reset(list(range(l))) # Reset the quantum bit(s) to their default state すべての量子ビットの状態を|0>にする
+    # qc.reset(list(range(l)))
     
     # イヴの情報を元に、アリスと同じエンコードをして、量子ビットの偏光状態を決める
-    for i in range(l):
-        if e[i] == '0':
+    for i in range (l):
+        if eve_basis[i] == '0':
             if bits[i] == '1':
                 qc.x(i)
-        else:
+        elif eve_basis[i] == '1':
             if bits[i] == '0':
                 qc.h(i)
             else:
                 qc.x(i)
                 qc.h(i)
-    # Qiskit回路における「バリア（barrier）」は、量子ビットの状態に影響を与えない特別な操作で、回路設計や最適化において視覚的・操作的な支援を提供　
+
+    # display(qc.draw())
     qc.barrier()
-    display(qc.draw())
-    return [qc,bits]
+
+    return [qc, eve_basis ,bits]
+
+# execute 1000 times
+def main():
+    repeat = 10
+    Qber = 0
+    total_error = 0
+    for i in range(repeat):
+        ka = ''
+        kb = ''
+        error = ''
+        num_error = 0
+        while(len(ka) < sifted_key_length):
+            part_ka, part_kb = generate_Siftedkey(user0, user1, num_qubits_mac)
+            ka += part_ka
+            kb += part_kb
+            if len(ka) > sifted_key_length:
+                ka = ka[:sifted_key_length]
+                kb = kb[:sifted_key_length]
+    
+
+    
+        for j in range(len(ka)):
+            if ka[j] != kb[j]:
+                error += '!'
+                num_error += 1
+            else:
+                error += ' '
+        total_error += num_error
+        Qber += num_error/len(ka)*100
+        print(f"num_error {num_error}")
+        print(f"The number of Quantum Bit Error: {num_error}/{sifted_key_length}")
+        print(f"QBER: ", {num_error/len(ka)*100})
+
+    print(f"Channel Noise Ratio:             {noise_prob*100}%")
+    print(f"Intercept-and-resend Ratio:      {intercept_prob*100}%")
+    print(f"Average of the number of Quantum Bit Error: {total_error/repeat}/{sifted_key_length}")
+
+
+    print(f"QBER: ", {Qber/repeat})
+
+if __name__ == '__main__':
+    main()
 
