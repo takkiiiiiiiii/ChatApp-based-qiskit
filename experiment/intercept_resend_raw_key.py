@@ -296,44 +296,11 @@ def main():
             part_ka, part_kb, execution_time = generate_Siftedkey(user0, user1, j)
             raw_keyrate = j / execution_time
             sifted_keyrate = len(part_ka) / execution_time
-            # print(f"length of sifted key {len(part_ka)}")
-            # print(f"Rawkey Rate(Round {i+1}): {raw_keyrate} bps")
-            # print(f"Siftedkey Rate(Round {i+1}): {sifted_keyrate} bps")
             total_rawkeyrate += raw_keyrate
             total_siftedkeyrate += sifted_keyrate
             total_executiontime += execution_time
             error = ''
             num_qubits = 0 # the number of all qubits to generate sifted key
-            # while(len(ka) < sifted_key_length):
-            #     part_ka, part_kb = generate_Siftedkey(user0, user1, num_qubits_linux)
-            #     ka += part_ka
-            #     kb += part_kb
-            #     num_qubits += num_qubits_linux
-            #     # if len(ka) > sifted_key_length:
-            #     #     ka = ka[:sifted_key_length]
-            #     #     kb = kb[:sifted_key_length]
-            #     #     num_qubits += 
-            #     #     break
-            # print(f"Length of Sifted key: {len(ka)}")
-            # for j in range(len(ka)):
-            #     if ka[j] != kb[j]:
-            #         error += '!'
-            #         num_error += 1
-            #     else:
-            #         error += ' '
-            # qber = num_error/len(ka)
-            # print(f"QBER:             {qber*100}%")
-            # print(f"Number of qubits: {num_qubits}")
-            # if qber == 0:
-            #     binaty_entropy_func = 0
-            # else:
-            #     binaty_entropy_func = -qber*math.log2(qber)-(1-qber)*math.log2(1-qber)
-            
-            # # bit/pulse(< 1)
-            # final_keyrate = (1 - (1 + kr_efficiency)*binaty_entropy_func) * len(ka) / num_qubits
-            # print(f"Final Key Rate: {final_keyrate}")
-            # total_qber += qber*100
-            # total_keyrate += final_keyrate
         print(F"Number of Qubits: {j}")
         print(f"Average of Raw key rate:             {total_rawkeyrate/count} bps")
         print(f"Average of Sifted key rate:             {total_siftedkeyrate/count} bps")
