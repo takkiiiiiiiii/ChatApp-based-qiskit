@@ -6,17 +6,20 @@ from qiskit.tools.visualization import plot_histogram
 import numpy as np
 import random
 import math
+import time
 
 
 
-count = 5
+count = 1000
 sifted_key_length = 1000
-num_qubits_linux = 12 # for Linux
+num_qubits_linux = 14 # for Linux
 num_qubits_mac = 19 # for mac
 backend = Aer.get_backend('qasm_simulator')
-intercept_prob = 0.2
-noise_prob = 0.02
-kr_efficiency = 1.22
+noise_prob_range = [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10]
+intercept_prob_range = [0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1]
+p_estimation = 0.25
+sifting_coefficiant = 0.5
+kr_efficiency = 1.22 
 
 class User:
     def __init__(self, username: str, sharekey, socket_classical, socket_quantum):
@@ -38,7 +41,8 @@ user1 = User("Bob", None, None, None)
 
 
 
-def generate_Siftedkey(user0, user1, num_qubits):
+def generate_Siftedkey(user0, user1, num_qubits, intercept_prob, noise_prob):
+    start = time.time()
     alice_bits = qrng(num_qubits)
     alice_basis = qrng(num_qubits)
     bob_basis = qrng(num_qubits)
@@ -102,6 +106,9 @@ def generate_Siftedkey(user0, user1, num_qubits):
             err_num += 1
     err_str = ''.join(['!' if ka[i] != kb[i] else ' ' for i in range(len(ka))])
 
+    end = time.time()
+    runtime = end - start
+
     # print("Alice's remaining bits:                    " + ka)
     # print("Error positions (by Eve and noise):        " + err_str)
     # print("Bob's remaining bits:                      " + kb)
@@ -114,10 +121,12 @@ def generate_Siftedkey(user0, user1, num_qubits):
     receiver_classical_channel.close()
     # print("eve_basis: ", eve_basis)
 
-  
+    error_num = 0
+    for i in range(len(ka)):
+        if ka[i] != kb[i]:
+            error_num += 1
     
-    return ka, kb
-
+    return ka, kb, runtime, error_num
 
 
 def qrng(n):
@@ -236,8 +245,8 @@ def intercept_resend(qc, qc2, eve_basis , intercept_prob):
     backend = Aer.get_backend('qasm_simulator')
 
     l = len(eve_basis)
-    num_to_intercept = int(num_qubits_mac * intercept_prob)
-    to_intercept = random.sample(range(num_qubits_mac), num_to_intercept)
+    num_to_intercept = int(num_qubits_linux * intercept_prob)
+    to_intercept = random.sample(range(num_qubits_linux), num_to_intercept)
     to_intercept = sorted(to_intercept)
     # print(to_intercept)
     eve_basis = list(eve_basis)
@@ -246,7 +255,7 @@ def intercept_resend(qc, qc2, eve_basis , intercept_prob):
         if i not in to_intercept:
             eve_basis[i] = '!'
 
-    # print(f"Eve basis: {eve_basis}")
+    # print(f"Eve basis: {len(eve_basis)}")
 
     for i in to_intercept:
         if eve_basis[i] == '1':
@@ -280,56 +289,52 @@ def intercept_resend(qc, qc2, eve_basis , intercept_prob):
 # execute 1000 times
 # Derive the final key rate
 def main():
-    print(f"Channel Noise Ratio:             {noise_prob*100}%")
-    print(f"Intercept-and-resend Ratio:      {intercept_prob*100}%")
-    final_keyrate = 0
-    total_keyrate = 0
-    num_error = 0
+    # noise_prob = 0.07
+    # intercept_prob = 0.6
     qber = 0
+    zero = 0
+    final_keyrate = 0
     total_qber = 0
-    for i in range(count):
-        ka = ''
-        kb = ''
-        num_error = 0
-        error = ''
-        num_qubits = 0 # the number of all qubits to generate sifted key
-        while(len(ka) < sifted_key_length):
-            part_ka, part_kb = generate_Siftedkey(user0, user1, num_qubits_mac)
-            ka += part_ka
-            kb += part_kb
-            num_qubits += num_qubits_mac
-            # if len(ka) > sifted_key_length:
-            #     ka = ka[:sifted_key_length]
-            #     kb = kb[:sifted_key_length]
-            #     num_qubits += 
-            #     break
-        print(f"Length of Sifted key: {len(ka)}")
-        for j in range(len(ka)):
-            if ka[j] != kb[j]:
-                error += '!'
-                num_error += 1
+    total_final_keyrate = 0
+    total_raw_keyrate = 0
+    print(F"Number of Qubits: {num_qubits_linux}")
+    for noise_prob in noise_prob_range: # channel noise
+        for intercept_prob in intercept_prob_range:
+            print(f"Channel Noise Ratio:             {noise_prob*100}%")
+            print(f"Intercept-and-resend Ratio:      {intercept_prob*100}%")
+            for i in range(count):
+                ka, kb, execution_time, error_num = generate_Siftedkey(user0, user1, num_qubits_linux, intercept_prob, noise_prob)
+                if len(ka) == 0:
+                    zero += 1
+                    continue
+                raw_keyrate = num_qubits_linux / execution_time
+                total_raw_keyrate += raw_keyrate
+                qber = error_num / len(ka)
+                total_qber += qber
+            # total_raw_keyrate /= (count-zero)
+            # total_qber /= (count-zero)
+            if total_qber / (count-zero) == 0:
+                ab_entropy = 0
             else:
-                error += ' '
-        qber = num_error/len(ka)
-        print(f"QBER:             {qber*100}%")
-        print(f"Number of qubits: {num_qubits}")
-        if qber == 0:
-            binaty_entropy_func = 0
-        else:
-            binaty_entropy_func = -qber*math.log2(qber)-(1-qber)*math.log2(1-qber)
-        
-        # bit/pulse(< 1)
-        final_keyrate = (1 - (1 + kr_efficiency)*binaty_entropy_func) * len(ka) / num_qubits
-        print(f"Final Key Rate: {final_keyrate}")
-        total_qber += qber*100
-        total_keyrate += final_keyrate
+                qber = total_qber / (count-zero) # update qber variable 
+                print(f"qber : {qber}")
+                print(f"Raw key rate: {raw_keyrate}")
+                ab_entropy = -qber*math.log2(qber)-(1-qber)*math.log2(1-qber)
+            ae_entropy = 1-ab_entropy
+            raw_keyrate = total_raw_keyrate / (count-zero) # update raw_keyrate variable 
+            final_keyrate = raw_keyrate*sifting_coefficiant*p_estimation*(ae_entropy-kr_efficiency*ab_entropy)
+            print(f"Average of QBER({count-zero}times):   {(total_qber/(count-zero))*100} %")
+            print(f"Average of Raw Key Rate({count-zero}times):   {total_raw_keyrate/(count-zero)} (pulse/second)")
+            print(f"Final Key Rate:   {final_keyrate} (bps)")
+            print("\n")
+            qber = 0
+            zero = 0
+            total_qber = 0
+            total_raw_keyrate = 0
+    
 
-
-    print(f"Channel Noise Ratio:             {noise_prob*100}%")
-    print(f"Intercept-and-resend Ratio:      {intercept_prob*100}%")
-
-    print(f'Final Key Rate (average of {count}):  {total_keyrate / count}')
-    print(f"QBER (average of {count}):             {total_qber/count}")
+    # print(f'Final Key Rate (average of {count}):  {total_keyrate / count}')
+    # print(f"QBER (average of {count}):             {total_qber/count}")
 
 if __name__ == '__main__':
     main()
