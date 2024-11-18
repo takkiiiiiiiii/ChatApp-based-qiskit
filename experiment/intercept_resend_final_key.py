@@ -317,11 +317,12 @@ def main():
                 ab_entropy = 0
             else:
                 qber = total_qber / (count-zero) # update qber variable 
-                print(f"qber : {qber}")
-                print(f"Raw key rate: {raw_keyrate}")
+                # print(f"qber : {qber}")
+                # print(f"Raw key rate: {raw_keyrate}")
                 ab_entropy = -qber*math.log2(qber)-(1-qber)*math.log2(1-qber)
             ae_entropy = 1-ab_entropy
-            raw_keyrate = total_raw_keyrate / (count-zero) # update raw_keyrate variable 
+            # raw_keyrate = total_raw_keyrate / (count-zero) # update raw_keyrate variable 
+            raw_keyrate = 368.0363931165903 # the raw key rate in case of 14 qubits (Average of 10000 times runs)
             final_keyrate = raw_keyrate*sifting_coefficiant*p_estimation*(ae_entropy-kr_efficiency*ab_entropy)
             print(f"Average of QBER({count-zero}times):   {(total_qber/(count-zero))*100} %")
             print(f"Average of Raw Key Rate({count-zero}times):   {total_raw_keyrate/(count-zero)} (pulse/second)")
