@@ -61,6 +61,21 @@
 <br><br>
 
 # Report of simulation
-## 
+## Raw key rate 
+* The raw key rate refers to the number of qubits provided per second by IQX.
+* We specified the qubits (1 ~ 28 qubits) that could be generated from the IQX in a single run, and ran the simulation under these conditions to investigate the raw key rate.
+![Rawkeyrate_Simu](figure/qlength_vs_raw_sifted_keyrate.png)
 
+* The highest raw key rate was found to be achieved with 14 qubits.
+
+&rArr; Required key length can be generated in the shortest possible time.
+
+## Quantum Bit Error Rate (QBER)
+* QBER refers to the ratio of bit errors between Alice and Bob in the sifted key.
+* That is caused by a change in the state of the photon due to an **intercept and resend attack (IRA)** by an eavesdropper or noise on the quantum channel.
+* We have considered quantum bit eavesdropping and noise on the quantum channel due to third-party intercept and resend attacks. 
+![QBER_Simu](figure/qber_vs_IRA.png)
+
+* Increases with higher IRA ratios and channel noise frequencies, reflecting more bit errors in the sifted key between Alice and Bob. 
+* In an ideal BB84 QKD protocol without channel noise (0%), Alice and Bob measure a QBER of 25% under 100% eavesdropping.  &rArr; Same as theoretical rate.
 
