@@ -17,9 +17,9 @@ num_qubits_mac = 19 # for mac
 backend = Aer.get_backend('qasm_simulator')
 noise_prob_range = [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10]
 intercept_prob_range = [0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1]
-p_estimation = 0.25
+p_estimation = 0.75
 sifting_coefficiant = 0.5
-kr_efficiency = 1.22 
+kr_efficiency = 1.22
 
 class User:
     def __init__(self, username: str, sharekey, socket_classical, socket_quantum):
@@ -332,7 +332,8 @@ def main():
             zero = 0
             total_qber = 0
             total_raw_keyrate = 0
-    
+            if final_keyrate < 0:
+                break
 
     # print(f'Final Key Rate (average of {count}):  {total_keyrate / count}')
     # print(f"QBER (average of {count}):             {total_qber/count}")
