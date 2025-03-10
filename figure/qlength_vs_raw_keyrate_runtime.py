@@ -67,14 +67,14 @@ fig, ax1 = plt.subplots(figsize=(10, 6))
 
 color = 'tab:blue'
 ax1.set_xlabel('Generated Qubits from IBM Platform per execution', fontsize=22)
-ax1.set_ylabel('Raw Key Rate (bps)', color=color, fontsize=22)
+ax1.set_ylabel('Raw Key Rate (qubit/second)', color=color, fontsize=22)
 ax1.plot(qbit, raw_keyrate, color=color, marker='o', label='Sifted Key Rate (bps)', markersize=10)
 ax1.tick_params(axis='y', labelcolor=color, labelsize=22)
 ax1.tick_params(axis='x', labelsize=20)
 ax1.set_ylim(0, 400)
 ax1.set_xlim(0, 29)
 ax1.set_xticks(np.arange(0, 29, 2))
-ax1.set_yticks(np.arange(0, 400, 50))
+ax1.set_yticks(np.arange(0, 401, 50))
 ax1.grid(alpha=0.3)
 
 ax2 = ax1.twinx()
@@ -92,3 +92,6 @@ fig.tight_layout(rect=[0, 0.03, 1, 0.95])
 plt.savefig('qlength_vs_raw_sifted_keyrate.png', format='png', bbox_inches="tight", dpi=300)
 
 plt.show()
+
+
+
