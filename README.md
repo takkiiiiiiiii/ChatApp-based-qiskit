@@ -106,7 +106,7 @@
 * $\textit{f }$ is the efficiency of the error correction algorithm. 
 
 ### Remarks
-* In the case of BB84, $H(A|E) = 1 - \textit{h}(QBER)$ and, $H(A|B) = \textit{h}(QBER)$, where $\textit{h}$ is the binary entropy function.
+* In the case of BB84, $H(A|E) = 1 - \textit{h}(QBER)$ and $H(A|B) = \textit{h}(QBER)$, where $\textit{h}$ is the binary entropy function.
 
 
 ### Result
