@@ -64,6 +64,8 @@
 ## Raw key rate 
 * The raw key rate refers to the number of qubits provided per second by IQX.
 * We specified the qubits (1 ~ 28 qubits) that could be generated from the IQX in a single run, and ran the simulation under these conditions to investigate the raw key rate.
+
+### Result
 ![Rawkeyrate_Simu](figure/qlength_vs_raw_sifted_keyrate.png)
 
 * The highest raw key rate was found to be achieved with 14 qubits.
@@ -74,8 +76,49 @@
 * QBER refers to the ratio of bit errors between Alice and Bob in the sifted key.
 * That is caused by a change in the state of the photon due to an **intercept and resend attack (IRA)** by an eavesdropper or noise on the quantum channel.
 * We have considered quantum bit eavesdropping and noise on the quantum channel due to third-party intercept and resend attacks. 
+
+### Result
 ![QBER_Simu](figure/qber_vs_IRA.png)
 
 * Increases with higher IRA ratios and channel noise frequencies, reflecting more bit errors in the sifted key between Alice and Bob. 
 * In an ideal BB84 QKD protocol without channel noise (0%), Alice and Bob measure a QBER of 25% under 100% eavesdropping.  &rArr; Same as theoretical rate.
 
+## Final key rate
+* Final Key Rate refers to the rate of generation of the number of bits (bps: bits per second) that can be used as the final secure key in QKD.
+* We used the formula based on the reference[1] to determine the Final key rate. 
+    * [1]: G. Bebrov, “On the (relation between) efficiency and secret key rate of qkd,” Scientific Reports, vol. 14, p. Article number: 3638, 2024
+
+```math
+\mathit{R} = c \times s \times p [H(A|E) - \textit{f}H(A|B)]
+```    
+
+### Parameters
+* The $\textit{c}$ is the raw key rate, so based on the simulation about raw key rate, the value is decided.
+* The sifting coefficient $\textit{s}$ represents the fraction of raw key bits retained after Alice and Bob match their measurement basis. In BB84, Alice and Bob each choose one of two bases. Therefore, their bases match with a probability of 0.5, so s is usually 0.5.
+* The coefficient $\textit{p}$ represents the parameter estimation coefficient, which accounts for the fraction of the sifted key used to estimate the QBER. Typically, $\textit{p}$ ranges between 0.75 and 0.9. A higher value (e.g., 0.9) indicates that a　smaller proportion of the sifted key is allocated for parameter estimation, leaving more　bits for the final key. However, this reduces the accuracy of error estimation. 
+
+
+
+
+### Notations
+* $H(A|E)$ denotes the amount of information that Eve is uncertain about Alice’s key after the sifting step.
+* $H(A|B)$ denotes the theoretical amount of information that Alice and Bob need to exchange for KR, which is also the information leaked to Eve during the KR step. 
+* $\textit{f }$ is the efficiency of the error correction algorithm. 
+
+### Remarks
+* In the case of BB84, $H(A|E) = 1 - \textit{h}(QBER)$ and, $H(A|B) = \textit{h}(QBER)$, where $\textit{h}$ is the binary entropy function.
+
+
+### Result
+* In case of $\textit{p} = 0.75$
+![Finalkeyrate_Simu1](figure/fkr_vs_IRA_0.75.png)
+
+* In case of $\textit{p} = 0.9$
+![Finalkeyrate_Simu2](figure/fkr_vs_IRA_0.9.png)
+
+* The Final key rate falls as the Intercept and resend ratio and noise channel levels increase.
+* A relatively higher final key rate was achieved for p = 0.9. In this case, the Final key rate reached 160 bps.
+
+
+## Conclusion
+Designed in Qiskit through IBM Quantum Experience (IQX), QKD was simulated using quantum circuits to achieve a realistic implementation. Simulations of Raw Key Rate revealed the optimum number of qubits for key generation. Furthermore, simulations of QBER and Final Key Rate showed that QBER reached approximately 25\% at 0\% channel noise and 100\% IRA ratio, aligning closely with the expected theoretical value for BB84. The Final Key Rate exhibited a declining trend as channel noise and IRA ratio increased, demonstrating the impact of these factors on key generation efficiency. These findings confirm the reliability of Qryptic Chat and highlight its potential for further refinement and practical deployment.
