@@ -1,4 +1,4 @@
-# Chat Application Based on Quantum Key Distribution
+# Qryptic chat: a simple chat application based on Quantum Key Distribution
 
 ## Quantum Key Distribution (QKD) : Introduction
 * QKD is a promising method to distribute secure keys secretly between legitimate users 
